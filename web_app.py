@@ -4,13 +4,16 @@
 import os, sys, json
 from datetime import datetime, timedelta
 from collections import defaultdict
-from flask import Flask, render_template, request, redirect, url_for, send_file, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, send_file, flash, jsonify, session
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+
+# ─── Password ───
+LOGIN_PASSWORD = 'helia123'
 
 # ─── Data Directory ───
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -195,12 +198,41 @@ def _file_size(fp):
     s = os.path.getsize(fp)
     return f"{s//1024} KB" if s < 1048576 else f"{s//1048576} MB"
 
+# ─── Login ───
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == LOGIN_PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        else:
+            flash("رمز عبور اشتباه است", "error")
+            return render_template("login.html"), 401
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("authenticated", None)
+    return redirect(url_for("login"))
+
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("authenticated"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
+
 # ─── Routes ───
 @app.route("/")
+@login_required
 def index():
     return render_template("index.html", today=PersianDate.today_str(),
         services=get_services(), employees=get_employees())
 
+@login_required
 @app.route("/submit_transaction", methods=["POST"])
 def submit_transaction():
     data = request.form
@@ -304,6 +336,7 @@ def submit_transaction():
     
     return redirect(url_for("index"))
 
+@login_required
 @app.route("/reports")
 def reports():
     today = PersianDate.today_str()
@@ -319,6 +352,7 @@ def reports():
         total=total, customers=customers, services_count=len(txns),
         commission=commission, today=today)
 
+@login_required
 @app.route("/monthly", methods=["GET","POST"])
 def monthly():
     now = datetime.now()
@@ -379,6 +413,7 @@ def export_monthly(month_str):
     fp = os.path.join(DATA_DIR, f"report_{y}_{m:02d}.xlsx"); wb.save(fp)
     return send_file(fp, as_attachment=True)
 
+@login_required
 @app.route("/customers", methods=["GET","POST"])
 def customers_page():
     if request.method == "POST":
@@ -399,6 +434,7 @@ def customers_page():
         custs = [c for c in custs if query in c["name"].lower() or query in c["phone"] or query in c["specialty"].lower()]
     return render_template("customers.html", customers=custs, query=query)
 
+@login_required
 @app.route("/customers/export")
 def export_customers():
     custs = get_customers()
@@ -416,6 +452,7 @@ def export_customers():
     wb.save(fp)
     return send_file(fp, as_attachment=True)
 
+@login_required
 @app.route("/employees", methods=["GET","POST"])
 def employees_page():
     if request.method == "POST":
@@ -446,6 +483,7 @@ def services_page():
         return redirect(url_for("services_page"))
     return render_template("services.html", services=get_services())
 
+@login_required
 @app.route("/backup", methods=["GET","POST"])
 def backup_page():
     if request.method == "POST":

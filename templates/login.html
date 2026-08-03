@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>هلیا بیوتی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:'Vazirmatn',Tahoma,Arial,sans-serif;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,#fce4ec 0%,#f8bbd0 30%,#f48fb1 60%,#ec407a 100%);
+  overflow:hidden;
+  position:relative;
+}
+
+/* ─── Animated Background Circles ─── */
+.bg-circle{
+  position:absolute;
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  animation:float 20s infinite ease-in-out;
+}
+.bg-circle:nth-child(1){width:400px;height:400px;top:-100px;right:-100px;animation-delay:0s}
+.bg-circle:nth-child(2){width:300px;height:300px;bottom:-80px;left:-80px;animation-delay:-5s}
+.bg-circle:nth-child(3){width:200px;height:200px;top:40%;left:10%;animation-delay:-10s}
+.bg-circle:nth-child(4){width:150px;height:150px;bottom:20%;right:15%;animation-delay:-15s}
+.bg-circle:nth-child(5){width:250px;height:250px;top:20%;right:30%;animation-delay:-8s}
+
+@keyframes float{
+  0%,100%{transform:translate(0,0) scale(1)}
+  25%{transform:translate(30px,-30px) scale(1.05)}
+  50%{transform:translate(-20px,20px) scale(0.95)}
+  75%{transform:translate(20px,10px) scale(1.02)}
+}
+
+/* ─── Login Card ─── */
+.login-card{
+  background:linear-gradient(135deg,#ffffff 0%,#fce4ec 100%);
+  border-radius:24px;
+  padding:48px 40px;
+  width:380px;
+  max-width:90vw;
+  box-shadow:0 20px 60px rgba(0,0,0,0.15),0 0 0 1px rgba(255,255,255,0.2);
+  text-align:center;
+  position:relative;
+  z-index:10;
+  animation:cardEntry 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes cardEntry{
+  from{opacity:0;transform:translateY(40px) scale(0.95)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* ─── Logo ─── */
+.logo{
+  width:100px;
+  height:100px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#d81b60 0%,#ad1457 100%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 24px;
+  box-shadow:0 8px 24px rgba(216,27,96,0.3);
+  animation:logoPulse 3s infinite ease-in-out;
+}
+
+@keyframes logoPulse{
+  0%,100%{box-shadow:0 8px 24px rgba(216,27,96,0.3)}
+  50%{box-shadow:0 12px 32px rgba(216,27,96,0.4)}
+}
+
+.logo span{
+  font-size:42px;
+  color:#fff;
+  font-weight:700;
+  line-height:1;
+}
+
+/* ─── Title ─── */
+.title{
+  font-size:28px;
+  font-weight:700;
+  color:#1a1a2e;
+  margin-bottom:8px;
+  letter-spacing:-0.02em;
+}
+
+.subtitle{
+  font-size:14px;
+  color:#5f6368;
+  margin-bottom:32px;
+  font-weight:400;
+}
+
+/* ─── Password Input ─── */
+.input-group{
+  position:relative;
+  margin-bottom:24px;
+}
+
+.input-group input{
+  width:100%;
+  padding:16px 20px;
+  padding-left:50px;
+  border:2px solid #e8eaed;
+  border-radius:14px;
+  font-family:'Vazirmatn',sans-serif;
+  font-size:16px;
+  background:#fff;
+  color:#1a1a2e;
+  text-align:center;
+  letter-spacing:4px;
+  transition:all 0.3s ease;
+  direction:ltr;
+}
+
+.input-group input:focus{
+  outline:none;
+  border-color:#d81b60;
+  box-shadow:0 0 0 4px rgba(216,27,96,0.1);
+}
+
+.input-group input::placeholder{
+  letter-spacing:0;
+  direction:rtl;
+  color:#9aa0a6;
+  font-weight:300;
+}
+
+.input-icon{
+  position:absolute;
+  left:16px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:20px;
+  color:#9aa0a6;
+  transition:color 0.3s ease;
+}
+
+.input-group input:focus + .input-icon{
+  color:#d81b60;
+}
+
+/* ─── Submit Button ─── */
+.submit-btn{
+  width:100%;
+  padding:16px;
+  background:linear-gradient(135deg,#43a047 0%,#2e7d32 100%);
+  color:#fff;
+  border:none;
+  border-radius:14px;
+  font-family:'Vazirmatn',sans-serif;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all 0.3s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  box-shadow:0 4px 16px rgba(46,125,50,0.3);
+}
+
+.submit-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(46,125,50,0.4);
+}
+
+.submit-btn:active{
+  transform:translateY(0);
+}
+
+.submit-btn:disabled{
+  background:#e0e0e0;
+  box-shadow:none;
+  cursor:not-allowed;
+}
+
+/* ─── Error Message ─── */
+.error-msg{
+  margin-top:16px;
+  padding:12px 16px;
+  background:#fce4ec;
+  color:#c62828;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:500;
+  display:none;
+  animation:shake 0.5s ease;
+}
+
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+}
+
+/* ─── Footer ─── */
+.footer{
+  margin-top:24px;
+  font-size:12px;
+  color:#9aa0a6;
+}
+
+/* ─── Loading Spinner ─── */
+.spinner{
+  width:20px;
+  height:20px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+  display:none;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+/* ─── Responsive ─── */
+@media(max-width:480px){
+  .login-card{padding:36px 28px}
+  .title{font-size:24px}
+  .logo{width:80px;height:80px}
+  .logo span{font-size:34px}
+}
+</style>
+</head>
+<body>
+
+<!-- Background Circles -->
+<div class="bg-circle"></div>
+<div class="bg-circle"></div>
+<div class="bg-circle"></div>
+<div class="bg-circle"></div>
+<div class="bg-circle"></div>
+
+<!-- Login Card -->
+<div class="login-card">
+  <div class="logo">
+    <span>HB</span>
+  </div>
+  
+  <h1 class="title">هلیا بیوتی</h1>
+  <p class="subtitle">سیستم مدیریت سالن زیبایی</p>
+  
+  <form id="loginForm" onsubmit="handleLogin(event)">
+    <div class="input-group">
+      <input type="password" id="password" placeholder="رمز عبور را وارد کنید" maxlength="20" autofocus>
+      <span class="input-icon">🔒</span>
+    </div>
+    
+    <button type="submit" class="submit-btn" id="submitBtn">
+      <span id="btnText">ورود</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+  </form>
+  
+  <div class="error-msg" id="errorMsg"></div>
+  
+  <div class="footer">
+    طراحی شده با ❤️ برای هلیا بیوتی
+  </div>
+</div>
+
+<script>
+const PASSWORD = 'helia123'; // رمز عبور - اینجا تغییر بدید
+
+function handleLogin(e) {
+  e.preventDefault();
+  const password = document.getElementById('password').value;
+  const errorMsg = document.getElementById('errorMsg');
+  const submitBtn = document.getElementById('submitBtn');
+  const btnText = document.getElementById('btnText');
+  const spinner = document.getElementById('spinner');
+  
+  if (!password) {
+    showError('لطفاً رمز عبور را وارد کنید');
+    return;
+  }
+  
+  // Show loading
+  submitBtn.disabled = true;
+  btnText.style.display = 'none';
+  spinner.style.display = 'block';
+  
+  // Simulate network delay
+  setTimeout(() => {
+    if (password === PASSWORD) {
+      // Success - redirect to main app
+      window.location.href = '/';
+    } else {
+      // Error
+      submitBtn.disabled = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+      showError('رمز عبور اشتباه است');
+      document.getElementById('password').value = '';
+      document.getElementById('password').focus();
+    }
+  }, 800);
+}
+
+function showError(msg) {
+  const errorMsg = document.getElementById('errorMsg');
+  errorMsg.textContent = msg;
+  errorMsg.style.display = 'block';
+  
+  // Re-trigger animation
+  errorMsg.style.animation = 'none';
+  setTimeout(() => {
+    errorMsg.style.animation = 'shake 0.5s ease';
+  }, 10);
+  
+  // Auto hide after 5 seconds
+  setTimeout(() => {
+    errorMsg.style.display = 'none';
+  }, 5000);
+}
+
+// Enter key to submit
+document.getElementById('password').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    handleLogin(e);
+  }
+});
+</script>
+
+</body>
+</html>
