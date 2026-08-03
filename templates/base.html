@@ -22,8 +22,9 @@
   --text-muted: #9aa0a6;
   --border: #e8eaed;
   --border-focus: #d81b60;
-  --success: #1e8e3e;
+  --success: #2e7d32;
   --success-bg: #e6f4ea;
+  --success-light: #4caf50;
   --danger: #d93025;
   --danger-bg: #fce8e6;
   --warning: #e37400;
@@ -94,14 +95,18 @@ a:hover{color:var(--primary-dark)}
   letter-spacing:-0.02em;
 }
 
-/* ─── Cards ─── */
+/* ─── Cards (Match image style - pink gradient) ─── */
 .card{
-  background:var(--surface);
+  background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);
   border-radius:var(--radius-lg);
   padding:24px;
   margin-bottom:20px;
-  border:1px solid var(--border);
-  box-shadow:var(--shadow-xs);
+  border:1px solid rgba(216,27,96,0.1);
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
+  transition:var(--transition);
+}
+.card:hover{
+  box-shadow:0 4px 16px rgba(0,0,0,0.1);
 }
 .card h2{
   color:var(--text);
@@ -118,22 +123,22 @@ a:hover{color:var(--primary-dark)}
 .summary .box{
   flex:1;
   min-width:150px;
-  background:var(--surface);
+  background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);
   border-radius:var(--radius-lg);
   padding:22px 20px;
   text-align:center;
-  border:1px solid var(--border);
-  box-shadow:var(--shadow-xs);
+  border:1px solid rgba(216,27,96,0.1);
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
   transition:var(--transition);
 }
-.summary .box:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.summary .box:hover{box-shadow:0 4px 16px rgba(0,0,0,0.1);transform:translateY(-2px)}
 .summary .box .label{color:var(--text-muted);font-size:12px;font-weight:500;margin-bottom:8px;letter-spacing:0.02em}
 .summary .box .value{font-size:26px;font-weight:700;color:var(--primary);letter-spacing:-0.02em}
 .summary .box .value.green{color:var(--success)}
 .summary .box .value.orange{color:var(--warning)}
 
 /* ─── Tables ─── */
-table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--radius-lg);overflow:hidden}
+table{width:100%;border-collapse:collapse;background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
 th{
   background:var(--surface-alt);
   color:var(--text-secondary);
@@ -179,7 +184,7 @@ input:focus,select:focus,textarea:focus{
 }
 input::placeholder{color:var(--text-muted);font-weight:300}
 
-/* ─── Buttons ─── */
+/* ─── Buttons (Match image style) ─── */
 .btn{
   display:inline-flex;
   align-items:center;
@@ -198,14 +203,23 @@ input::placeholder{color:var(--text-muted);font-weight:300}
 }
 .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
 .btn:active{transform:translateY(0)}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-primary:hover{background:var(--primary-dark)}
+
+/* Primary = Dark Green (matches image submit button) */
+.btn-primary{background:#43a047;color:#fff}
+.btn-primary:hover{background:#388e3c}
+
+/* Success = Green */
 .btn-success{background:var(--success);color:#fff}
-.btn-success:hover{background:#157347}
+.btn-success:hover{background:#1b5e20}
+
+/* Danger */
 .btn-danger{background:var(--danger);color:#fff}
 .btn-danger:hover{background:#c5221f}
-.btn-secondary{background:var(--surface-alt);color:var(--text-secondary);border:1px solid var(--border)}
-.btn-secondary:hover{background:var(--border)}
+
+/* Secondary (matches image cancel button) */
+.btn-secondary{background:transparent;color:#666;border:1px solid #e0e0e0}
+.btn-secondary:hover{background:#f5f5f5;border-color:#ccc}
+
 .btn-sm{padding:6px 12px;font-size:12px}
 
 /* ─── Form Layout ─── */
@@ -243,12 +257,12 @@ input::placeholder{color:var(--text-muted);font-weight:300}
   backdrop-filter:blur(4px);
 }
 .modal-content{
-  background:var(--surface);
+  background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);
   border-radius:var(--radius-lg);
   padding:28px;
   width:420px;
   max-width:92vw;
-  box-shadow:var(--shadow-lg);
+  box-shadow:0 10px 30px rgba(0,0,0,0.15);
   max-height:90vh;
   overflow-y:auto;
 }
@@ -267,7 +281,7 @@ input::placeholder{color:var(--text-muted);font-weight:300}
 /* ─── Payment Options ─── */
 .payment-option{
   display:flex;align-items:center;gap:6px;padding:12px 14px;
-  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+  background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);border:1.5px solid rgba(216,27,96,0.1);border-radius:var(--radius);
   cursor:pointer;transition:var(--transition);text-align:center;justify-content:center
 }
 .payment-option:has(input:checked){border-color:var(--primary);background:var(--primary-light)}

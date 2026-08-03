@@ -99,35 +99,88 @@
       </div>
     </div>
 
-    <!-- Payment Method -->
-    <div style="background:var(--surface-alt);border-radius:8px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
-      <label style="font-weight:600;margin-bottom:8px;display:block">💳 روش پرداخت</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <label class="payment-option" style="flex:1;min-width:80px" onclick="selectPayment(this,'نقدی')">
-          <input type="radio" name="payment_method" value="نقدی" checked onchange="updatePaymentUI()">
-          <span class="payment-label">💵 نقدی</span>
-        </label>
-        <label class="payment-option" style="flex:1;min-width:80px" onclick="selectPayment(this,'کارت‌خوان')">
-          <input type="radio" name="payment_method" value="کارت‌خوان" onchange="updatePaymentUI()">
-          <span class="payment-label">💳 کارت‌خوان</span>
-        </label>
-        <label class="payment-option" style="flex:1;min-width:80px" onclick="selectPayment(this,'کارت به کارت')">
-          <input type="radio" name="payment_method" value="کارت به کارت" onchange="updatePaymentUI()">
-          <span class="payment-label">🏦 کارت به کارت</span>
-        </label>
-        <label class="payment-option" style="flex:1;min-width:80px" onclick="selectPayment(this,'نسیه')">
-          <input type="radio" name="payment_method" value="نسیه" onchange="updatePaymentUI()">
-          <span class="payment-label">📝 نسیه</span>
-        </label>
-      </div>
-      <!-- Split Payment -->
-      <div id="split_payment_section" style="display:none;background:var(--surface);border-radius:8px;padding:12px;border:1px solid var(--border)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <label style="font-weight:600;font-size:13px">💰 جزئیات پرداخت</label>
-          <span style="font-size:12px;color:var(--text-muted)">مبلغ باقیمانده: <strong id="remaining_amount" style="color:var(--warning)">۰</strong> تومان</span>
+    <!-- ─── Split Payment System ─── -->
+    <div style="background:linear-gradient(135deg,#ffffff 0%,#fce4ec 100%);border-radius:12px;padding:16px;border:1px solid rgba(216,27,96,0.1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <label style="font-weight:600;font-size:14px;color:var(--text)">💳 روش پرداخت</label>
+        <div style="background:#e8f5e9;padding:6px 12px;border-radius:8px;font-size:13px">
+          <span style="color:var(--text-muted)">مبلغ کل:</span>
+          <strong style="color:var(--success);font-size:15px" id="payment_total_display">۰</strong>
+          <span style="color:var(--text-muted)">تومان</span>
         </div>
-        <div id="split_payments_list"></div>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="addSplitPayment()" style="margin-top:8px">➕ افزودن روش پرداخت</button>
+      </div>
+      
+      <!-- Payment Method Rows -->
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+        <!-- Cash -->
+        <div class="payment-row" style="display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border-radius:10px;border:1px solid var(--border);transition:all 0.2s">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;min-width:120px;font-size:13px;font-weight:500">
+            <input type="checkbox" id="pay_cash_check" onchange="togglePaymentMethod('cash')" style="width:18px;height:18px;accent-color:var(--success)">
+            <span>💵 نقدی</span>
+          </label>
+          <input type="text" id="pay_cash" class="payment-input" placeholder="0" disabled 
+                 style="flex:1;max-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;text-align:left;background:#f9f9f9"
+                 oninput="formatPaymentInput(this);updatePaymentBalance()">
+          <span style="color:var(--text-muted);font-size:12px">تومان</span>
+        </div>
+        
+        <!-- Card Reader -->
+        <div class="payment-row" style="display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border-radius:10px;border:1px solid var(--border);transition:all 0.2s">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;min-width:120px;font-size:13px;font-weight:500">
+            <input type="checkbox" id="pay_card_check" onchange="togglePaymentMethod('card')" style="width:18px;height:18px;accent-color:var(--success)">
+            <span>💳 کارت‌خوان</span>
+          </label>
+          <input type="text" id="pay_card" class="payment-input" placeholder="0" disabled
+                 style="flex:1;max-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;text-align:left;background:#f9f9f9"
+                 oninput="formatPaymentInput(this);updatePaymentBalance()">
+          <span style="color:var(--text-muted);font-size:12px">تومان</span>
+        </div>
+        
+        <!-- Bank Transfer -->
+        <div class="payment-row" style="display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border-radius:10px;border:1px solid var(--border);transition:all 0.2s">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;min-width:120px;font-size:13px;font-weight:500">
+            <input type="checkbox" id="pay_transfer_check" onchange="togglePaymentMethod('transfer')" style="width:18px;height:18px;accent-color:var(--success)">
+            <span>🏦 کارت به کارت</span>
+          </label>
+          <input type="text" id="pay_transfer" class="payment-input" placeholder="0" disabled
+                 style="flex:1;max-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;text-align:left;background:#f9f9f9"
+                 oninput="formatPaymentInput(this);updatePaymentBalance()">
+          <span style="color:var(--text-muted);font-size:12px">تومان</span>
+        </div>
+        
+        <!-- Credit/Tab -->
+        <div class="payment-row" style="display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border-radius:10px;border:1px solid var(--border);transition:all 0.2s">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;min-width:120px;font-size:13px;font-weight:500">
+            <input type="checkbox" id="pay_credit_check" onchange="togglePaymentMethod('credit')" style="width:18px;height:18px;accent-color:var(--warning)">
+            <span>📝 نسیه</span>
+          </label>
+          <input type="text" id="pay_credit" class="payment-input" placeholder="0" disabled
+                 style="flex:1;max-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;text-align:left;background:#f9f9f9"
+                 oninput="formatPaymentInput(this);updatePaymentBalance()">
+          <span style="color:var(--text-muted);font-size:12px">تومان</span>
+        </div>
+      </div>
+      
+      <!-- Balance Status -->
+      <div id="balance_status" style="padding:12px;border-radius:10px;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span style="font-size:13px;color:var(--text-muted)">جمع پرداختی:</span>
+            <strong id="paid_total" style="font-size:16px;margin-right:6px">۰</strong>
+            <span style="font-size:12px;color:var(--text-muted)">تومان</span>
+          </div>
+          <div>
+            <span style="font-size:13px;color:var(--text-muted)">باقیمانده:</span>
+            <strong id="remaining_display" style="font-size:16px;margin-right:6px">۰</strong>
+            <span style="font-size:12px;color:var(--text-muted)">تومان</span>
+          </div>
+        </div>
+        <!-- Balance Bar -->
+        <div style="margin-top:10px;height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden">
+          <div id="balance_bar" style="height:100%;background:var(--success);width:0%;transition:width 0.3s;border-radius:3px"></div>
+        </div>
+        <!-- Warning Message -->
+        <div id="balance_warning" style="margin-top:8px;font-size:12px;display:none"></div>
       </div>
     </div>
 
@@ -158,7 +211,7 @@
     </div>
   </div>
   <div style="display:flex;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-    <button type="submit" class="btn btn-success" style="font-size:15px;padding:14px 36px">✅ ثبت نهایی</button>
+    <button type="submit" class="btn btn-primary" style="font-size:15px;padding:14px 36px">✅ ثبت نهایی</button>
     <button type="button" class="btn btn-secondary" onclick="clearAll()">🗑️ پاک کردن</button>
   </div>
 </div>
@@ -312,67 +365,125 @@ function updateTotals(){
   document.getElementById('points_line').style.display = pointsUsed > 0 ? 'block' : 'none';
   document.getElementById('points_line_val').textContent = pointsUsed;
   document.getElementById('final_amount_display').innerHTML = finalAmount.toLocaleString() + ' <small style="font-size:14px;font-weight:400">تومان</small>';
+  
+  // Update payment balance when totals change
+  updatePaymentBalance();
 }
 
-function updatePaymentUI(){
-  let selected = document.querySelector('input[name="payment_method"]:checked').value;
-  let splitSection = document.getElementById('split_payment_section');
-  if(selected === 'نسیه'){
-    splitSection.style.display = 'none';
+// ─── Split Payment System ───
+function togglePaymentMethod(method) {
+  const check = document.getElementById(`pay_${method}_check`);
+  const input = document.getElementById(`pay_${method}`);
+  const row = check.closest('.payment-row');
+  
+  if (check.checked) {
+    input.disabled = false;
+    input.style.background = '#fff';
+    input.style.borderColor = 'var(--success)';
+    row.style.borderColor = 'var(--success)';
+    row.style.boxShadow = '0 2px 8px rgba(46,125,50,0.15)';
+    input.focus();
   } else {
-    splitSection.style.display = 'block';
-    renderSplitPayments();
+    input.disabled = true;
+    input.value = '';
+    input.style.background = '#f9f9f9';
+    input.style.borderColor = 'var(--border)';
+    row.style.borderColor = 'var(--border)';
+    row.style.boxShadow = 'none';
+  }
+  updatePaymentBalance();
+}
+
+function formatPaymentInput(input) {
+  // Remove non-digits
+  let value = input.value.replace(/[^\d]/g, '');
+  // Format with commas
+  if (value) {
+    input.value = parseInt(value).toLocaleString('en-US');
   }
 }
 
-function selectPayment(label, method){
-  label.querySelector('input[type="radio"]').checked = true;
-  updatePaymentUI();
-
-let splitPayments = [];
-
-function addSplitPayment(){
-  let finalAmount = calculateFinalAmount();
-  let totalPaid = splitPayments.reduce((sum,p) => sum + p.amount, 0);
-  let remaining = finalAmount - totalPaid;
-  if(remaining <= 0){alert('مبلغ کامل پرداخت شده');return;}
+function updatePaymentBalance() {
+  const finalAmount = calculateFinalAmount();
+  const paymentTotalEl = document.getElementById('payment_total_display');
+  const paidTotalEl = document.getElementById('paid_total');
+  const remainingEl = document.getElementById('remaining_display');
+  const balanceBar = document.getElementById('balance_bar');
+  const balanceWarning = document.getElementById('balance_warning');
+  const balanceStatus = document.getElementById('balance_status');
+  const submitBtn = document.querySelector('button[type="submit"]');
   
-  let methods = ['نقدی','کارت‌خوان','کارت به کارت'];
-  let method = prompt('روش پرداخت:\n1. نقدی\n2. کارت‌خوان\n3. کارت به کارت\n\nشماره را وارد کنید (1-3):');
-  if(!method || !['1','2','3'].includes(method)) return;
+  // Update total display
+  paymentTotalEl.textContent = finalAmount.toLocaleString();
   
-  let methodName = methods[parseInt(method)-1];
-  let amount = prompt('مبلغ به تومان (باقیمانده: ' + remaining.toLocaleString() + '):');
-  if(!amount || isNaN(amount) || parseInt(amount) <= 0) return;
+  // Calculate paid amounts
+  const cash = parseInt(document.getElementById('pay_cash').value.replace(/[^\d]/g, '')) || 0;
+  const card = parseInt(document.getElementById('pay_card').value.replace(/[^\d]/g, '')) || 0;
+  const transfer = parseInt(document.getElementById('pay_transfer').value.replace(/[^\d]/g, '')) || 0;
+  const credit = parseInt(document.getElementById('pay_credit').value.replace(/[^\d]/g, '')) || 0;
   
-  amount = Math.min(parseInt(amount), remaining);
-  splitPayments.push({method: methodName, amount: amount});
-  renderSplitPayments();
-}
-
-function removeSplitPayment(i){
-  splitPayments.splice(i,1);
-  renderSplitPayments();
-}
-
-function renderSplitPayments(){
-  let container = document.getElementById('split_payments_list');
-  let finalAmount = calculateFinalAmount();
-  let totalPaid = splitPayments.reduce((sum,p) => sum + p.amount, 0);
-  let remaining = finalAmount - totalPaid;
+  const totalPaid = cash + card + transfer + credit;
+  const remaining = finalAmount - totalPaid;
   
-  let html = '';
-  splitPayments.forEach((p,i) => {
-    let icons = {'نقدی':'💵','کارت‌خوان':'💳','کارت به کارت':'🏦'};
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--surface-alt);border-radius:6px;margin-bottom:4px;font-size:13px">';
-    html += '<span>'+(icons[p.method]||'')+' '+p.method+'</span>';
-    html += '<span style="font-weight:600">'+p.amount.toLocaleString()+' تومان <button type="button" onclick="removeSplitPayment('+i+')" style="background:none;border:none;color:var(--danger);cursor:pointer;margin-right:6px">✕</button></span>';
-    html += '</div>';
-    html += '<input type="hidden" name="split_method[]" value="'+p.method+'">';
-    html += '<input type="hidden" name="split_amount[]" value="'+p.amount+'">';
-  });
-  container.innerHTML = html;
-  document.getElementById('remaining_amount').textContent = remaining.toLocaleString();
+  // Show balance status if any payment method is checked
+  const anyChecked = document.getElementById('pay_cash_check').checked || 
+                     document.getElementById('pay_card_check').checked || 
+                     document.getElementById('pay_transfer_check').checked || 
+                     document.getElementById('pay_credit_check').checked;
+  
+  balanceStatus.style.display = anyChecked ? 'block' : 'none';
+  
+  // Update displays
+  paidTotalEl.textContent = totalPaid.toLocaleString();
+  paidTotalEl.style.color = totalPaid >= finalAmount ? 'var(--success)' : 'var(--warning)';
+  
+  remainingEl.textContent = remaining.toLocaleString();
+  remainingEl.style.color = remaining > 0 ? 'var(--danger)' : 'var(--success)';
+  
+  // Update progress bar
+  const progress = finalAmount > 0 ? Math.min((totalPaid / finalAmount) * 100, 100) : 0;
+  balanceBar.style.width = progress + '%';
+  balanceBar.style.background = progress >= 100 ? 'var(--success)' : progress > 0 ? 'var(--warning)' : '#e0e0e0';
+  
+  // Validation
+  balanceWarning.style.display = 'block';
+  if (totalPaid === 0 && anyChecked) {
+    balanceWarning.innerHTML = '<span style="color:var(--warning)">⚠️ مبلغی وارد نشده</span>';
+    balanceStatus.style.background = '#fff8e1';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+  } else if (remaining > 0 && credit === 0) {
+    balanceWarning.innerHTML = `<span style="color:var(--danger)">⚠️ مبلغ باقیمانده: ${remaining.toLocaleString()} تومان</span>`;
+    balanceStatus.style.background = '#fce4ec';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+  } else if (remaining < 0) {
+    balanceWarning.innerHTML = `<span style="color:var(--danger)">❌ مبلغ پرداختی بیشتر از فاکتور است (${Math.abs(remaining).toLocaleString()} تومان مازاد)</span>`;
+    balanceStatus.style.background = '#fce4ec';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+  } else if (remaining > 0 && credit > 0) {
+    balanceWarning.innerHTML = `<span style="color:var(--warning)">📝 نسیه: ${remaining.toLocaleString()} تومان باقیمانده</span>`;
+    balanceStatus.style.background = '#fff8e1';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
+  } else if (remaining === 0 && totalPaid > 0) {
+    balanceWarning.innerHTML = '<span style="color:var(--success)">✅ مبلغ کامل پرداخت شده</span>';
+    balanceStatus.style.background = '#e8f5e9';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
+  } else {
+    balanceWarning.style.display = 'none';
+    balanceStatus.style.background = '#f5f5f5';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
+  }
 }
 
 function calculateFinalAmount(){
@@ -393,6 +504,31 @@ function clearAll(){
   document.getElementById('discount_line').style.display = 'none';
   document.getElementById('points_line').style.display = 'none';
   document.getElementById('final_amount_display').innerHTML = '۰ <small style="font-size:14px;font-weight:400">تومان</small>';
+  
+  // Reset payment inputs
+  ['cash', 'card', 'transfer', 'credit'].forEach(method => {
+    const check = document.getElementById(`pay_${method}_check`);
+    const input = document.getElementById(`pay_${method}`);
+    const row = check.closest('.payment-row');
+    check.checked = false;
+    input.disabled = true;
+    input.value = '';
+    input.style.background = '#f9f9f9';
+    input.style.borderColor = 'var(--border)';
+    row.style.borderColor = 'var(--border)';
+    row.style.boxShadow = 'none';
+  });
+  
+  // Reset balance display
+  document.getElementById('balance_status').style.display = 'none';
+  document.getElementById('balance_warning').style.display = 'none';
+  document.getElementById('balance_bar').style.width = '0%';
+  
+  // Re-enable submit button
+  const submitBtn = document.querySelector('button[type="submit"]');
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = '1';
+  submitBtn.style.cursor = 'pointer';
 }
 
 fillPrice();
