@@ -102,23 +102,32 @@
     <!-- Payment Method -->
     <div style="background:var(--surface-alt);border-radius:8px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
       <label style="font-weight:600;margin-bottom:8px;display:block">💳 روش پرداخت</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <label class="payment-option" style="flex:1;min-width:100px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <label class="payment-option" style="flex:1;min-width:80px">
           <input type="radio" name="payment_method" value="نقدی" checked onchange="updatePaymentUI()"> 
           <span class="payment-label">💵 نقدی</span>
         </label>
-        <label class="payment-option" style="flex:1;min-width:100px">
+        <label class="payment-option" style="flex:1;min-width:80px">
           <input type="radio" name="payment_method" value="کارت‌خوان" onchange="updatePaymentUI()">
           <span class="payment-label">💳 کارت‌خوان</span>
         </label>
-        <label class="payment-option" style="flex:1;min-width:100px">
+        <label class="payment-option" style="flex:1;min-width:80px">
           <input type="radio" name="payment_method" value="کارت به کارت" onchange="updatePaymentUI()">
           <span class="payment-label">🏦 کارت به کارت</span>
         </label>
-        <label class="payment-option" style="flex:1;min-width:100px">
+        <label class="payment-option" style="flex:1;min-width:80px">
           <input type="radio" name="payment_method" value="نسیه" onchange="updatePaymentUI()">
           <span class="payment-label">📝 نسیه</span>
         </label>
+      </div>
+      <!-- Split Payment -->
+      <div id="split_payment_section" style="display:none;background:var(--surface);border-radius:8px;padding:12px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <label style="font-weight:600;font-size:13px">💰 جزئیات پرداخت</label>
+          <span style="font-size:12px;color:var(--text-muted)">مبلغ باقیمانده: <strong id="remaining_amount" style="color:var(--warning)">۰</strong> تومان</span>
+        </div>
+        <div id="split_payments_list"></div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addSplitPayment()" style="margin-top:8px">➕ افزودن روش پرداخت</button>
       </div>
     </div>
 
@@ -305,7 +314,68 @@ function updateTotals(){
 }
 
 function updatePaymentUI(){
-  // Future: update UI based on payment method
+  let selected = document.querySelector('input[name="payment_method"]:checked').value;
+  let splitSection = document.getElementById('split_payment_section');
+  if(selected === 'نسیه'){
+    splitSection.style.display = 'none';
+  } else {
+    splitSection.style.display = 'block';
+    renderSplitPayments();
+  }
+}
+
+let splitPayments = [];
+
+function addSplitPayment(){
+  let finalAmount = calculateFinalAmount();
+  let totalPaid = splitPayments.reduce((sum,p) => sum + p.amount, 0);
+  let remaining = finalAmount - totalPaid;
+  if(remaining <= 0){alert('مبلغ کامل پرداخت شده');return;}
+  
+  let methods = ['نقدی','کارت‌خوان','کارت به کارت'];
+  let method = prompt('روش پرداخت:\n1. نقدی\n2. کارت‌خوان\n3. کارت به کارت\n\nشماره را وارد کنید (1-3):');
+  if(!method || !['1','2','3'].includes(method)) return;
+  
+  let methodName = methods[parseInt(method)-1];
+  let amount = prompt('مبلغ به تومان (باقیمانده: ' + remaining.toLocaleString() + '):');
+  if(!amount || isNaN(amount) || parseInt(amount) <= 0) return;
+  
+  amount = Math.min(parseInt(amount), remaining);
+  splitPayments.push({method: methodName, amount: amount});
+  renderSplitPayments();
+}
+
+function removeSplitPayment(i){
+  splitPayments.splice(i,1);
+  renderSplitPayments();
+}
+
+function renderSplitPayments(){
+  let container = document.getElementById('split_payments_list');
+  let finalAmount = calculateFinalAmount();
+  let totalPaid = splitPayments.reduce((sum,p) => sum + p.amount, 0);
+  let remaining = finalAmount - totalPaid;
+  
+  let html = '';
+  splitPayments.forEach((p,i) => {
+    let icons = {'نقدی':'💵','کارت‌خوان':'💳','کارت به کارت':'🏦'};
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--surface-alt);border-radius:6px;margin-bottom:4px;font-size:13px">';
+    html += '<span>'+(icons[p.method]||'')+' '+p.method+'</span>';
+    html += '<span style="font-weight:600">'+p.amount.toLocaleString()+' تومان <button type="button" onclick="removeSplitPayment('+i+')" style="background:none;border:none;color:var(--danger);cursor:pointer;margin-right:6px">✕</button></span>';
+    html += '</div>';
+    html += '<input type="hidden" name="split_method[]" value="'+p.method+'">';
+    html += '<input type="hidden" name="split_amount[]" value="'+p.amount+'">';
+  });
+  container.innerHTML = html;
+  document.getElementById('remaining_amount').textContent = remaining.toLocaleString();
+}
+
+function calculateFinalAmount(){
+  let subtotal = items.reduce((sum,it) => sum + it.amount, 0);
+  let discountType = document.getElementById('discount_type').value;
+  let discountVal = parseInt(document.getElementById('discount_value').value) || 0;
+  let discountAmount = discountType === 'percent' ? Math.round(subtotal * discountVal / 100) : discountVal;
+  return Math.max(0, subtotal - discountAmount);
 }
 
 function clearAll(){

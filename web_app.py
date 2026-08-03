@@ -212,6 +212,12 @@ def submit_transaction():
     discount_type = data.get("discount_type", "amount")  # "amount" or "percent"
     discount_value = int(data.get("discount_value", 0) or 0)
     payment_method = data.get("payment_method", "نقدی")
+    split_methods = data.getlist("split_method[]")
+    split_amounts = data.getlist("split_amount[]")
+    if split_methods and split_amounts:
+        payment_summary = ", ".join([f"{m}: {int(a):,}" for m, a in zip(split_methods, split_amounts) if a])
+    else:
+        payment_summary = payment_method
     send_sms = data.get("send_sms", "")
     use_points = data.get("use_points", "")
     
@@ -291,7 +297,7 @@ def submit_transaction():
     if payment_method == "نسیه":
         flash(f"⚠️ فاکتور نسیه ثبت شد! مشتری: {customer} — مبلغ: {final_amount:,} تومان", "info")
     else:
-        flash(f"✅ تراکنش ثبت شد! مشتری: {customer} — مبلغ نهایی: {final_amount:,} تومان", "success")
+        flash(f"✅ تراکنش ثبت شد! مشتری: {customer} — مبلغ نهایی: {final_amount:,} تومان — پرداخت: {payment_summary}", "success")
     
     if send_sms == "on":
         flash(f"📱 پیامک فاکتور برای {customer} ارسال خواهد شد (قابلیت در دست ساخت)", "info")
