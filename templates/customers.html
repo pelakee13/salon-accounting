@@ -1,48 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px">📒 دفترچه مشتریان</h2>
+<h1 class="page-title">📒 دفترچه مشتریان</h1>
 
+<!-- Search & Export -->
 <div class="card">
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-    <form method="GET" style="display:flex;gap:8px;align-items:center">
-      <input name="q" value="{{ query }}" placeholder="🔍 جستجو..." style="width:220px">
-      <button type="submit" class="btn btn-secondary">جستجو</button>
+    <form method="GET" style="display:flex;gap:8px;align-items:center;flex:1">
+      <input name="q" value="{{ query }}" placeholder="🔍 جستجوی نام، تلفن یا تخصص..." style="max-width:300px">
+      <button type="submit" class="btn btn-secondary btn-sm">جستجو</button>
     </form>
-    <a href="/customers/export" class="btn btn-success">📥 خروجی اکسل</a>
+    <a href="/customers/export" class="btn btn-success btn-sm">📥 خروجی اکسل</a>
   </div>
 </div>
 
-<!-- Add/Edit Modal -->
-<div id="modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:25px;width:400px;max-width:90vw">
-    <h3 id="modal_title" style="color:#e91e63;margin-bottom:15px">افزودن مشتری</h3>
-    <form method="POST">
-      <input type="hidden" name="action" id="f_action" value="add">
-      <input type="hidden" name="idx" id="f_idx" value="">
-      <div style="margin-bottom:10px"><label>نام *</label><input name="name" id="f_name" required></div>
-      <div style="margin-bottom:10px"><label>تلفن</label><input name="phone" id="f_phone"></div>
-      <div style="margin-bottom:10px"><label>تخصص مورد علاقه</label>
-        <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option><option>رنگ</option><option>شینیون</option></select>
-      </div>
-      <div style="margin-bottom:10px"><label>تعداد مراجعه</label><input type="number" name="visits" id="f_visits" value="0"></div>
-      <div style="margin-bottom:15px"><label>یادداشت</label><input name="note" id="f_note"></div>
-      <div style="display:flex;gap:8px"><button type="submit" class="btn btn-success">ذخیره</button><button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button></div>
-    </form>
-  </div>
-</div>
-
+<!-- Customers Table -->
 <div class="card">
   <table>
     <thead><tr><th>نام</th><th>تلفن</th><th>تخصص</th><th>تاریخ عضویت</th><th>مراجعه</th><th>یادداشت</th><th>عملیات</th></tr></thead>
     <tbody>
     {% for c in customers %}
     <tr>
-      <td>{{ c.name }}</td><td>{{ c.phone }}</td><td>{{ c.specialty }}</td><td>{{ c.join_date }}</td><td>{{ c.visit_count }}</td><td>{{ c.note }}</td>
-      <td>
-        <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" onclick="editCust({{ loop.index0 }},'{{ c.name }}','{{ c.phone }}','{{ c.specialty }}',{{ c.visit_count }},'{{ c.note }}')">✏️</button>
+      <td><strong>{{ c.name }}</strong></td>
+      <td>{{ c.phone }}</td>
+      <td>{{ c.specialty }}</td>
+      <td>{{ c.join_date }}</td>
+      <td>{{ c.visit_count }}</td>
+      <td>{{ c.note }}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm" onclick="editCust({{ loop.index0 }},'{{ c.name }}','{{ c.phone }}','{{ c.specialty }}',{{ c.visit_count }},'{{ c.note }}')">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('آیا از حذف {{ c.name }} اطمینان دارید؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
-          <button class="btn btn-danger" style="padding:3px 8px;font-size:11px">❌</button>
+          <button class="btn btn-danger btn-sm">❌</button>
         </form>
       </td>
     </tr>
@@ -50,10 +38,32 @@
     </tbody>
   </table>
   {% if not customers %}<div class="empty">مشتری ثبت نشده</div>{% endif %}
-  <div style="margin-top:10px;font-size:12px;color:#7b1fa2">مشتریان: {{ customers|length }} نفر</div>
+  <div style="margin-top:12px;font-size:13px;color:var(--text-muted)">تعداد مشتریان: <strong>{{ customers|length }}</strong> نفر</div>
 </div>
 
-<button class="btn btn-primary" style="position:fixed;bottom:20px;left:20px;font-size:15px;padding:12px 20px;border-radius:50px" onclick="openAdd()">➕ افزودن مشتری</button>
+<!-- Add Button -->
+<button class="btn btn-primary" style="position:fixed;bottom:24px;left:24px;padding:14px 24px;border-radius:50px;box-shadow:var(--shadow-lg)" onclick="openAdd()">➕ افزودن مشتری</button>
+
+<!-- Modal -->
+<div id="modal" class="modal-overlay">
+  <div class="modal-content">
+    <h3 id="modal_title">افزودن مشتری</h3>
+    <form method="POST">
+      <input type="hidden" name="action" id="f_action" value="add">
+      <input type="hidden" name="idx" id="f_idx" value="">
+      <label>نام *</label><input name="name" id="f_name" required>
+      <label>تلفن</label><input name="phone" id="f_phone">
+      <label>تخصص مورد علاقه</label>
+      <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option><option>رنگ</option><option>شینیون</option></select>
+      <label>تعداد مراجعه</label><input type="number" name="visits" id="f_visits" value="0">
+      <label>یادداشت</label><input name="note" id="f_note">
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-success">ذخیره</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 const custs = {{ customers | tojson }};

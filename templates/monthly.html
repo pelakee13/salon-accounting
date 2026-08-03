@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px">📅 گزارش ماهانه بر اساس کارمند</h2>
+<h1 class="page-title">📅 گزارش ماهانه</h1>
 
 <div class="card">
   <form method="GET" action="/monthly" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
@@ -9,8 +9,8 @@
         {% for m in months %}<option value="{{ m }}" {% if m==month_str %}selected{% endif %}>{{ m }}</option>{% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn btn-primary">🔄 نمایش</button>
-    <a href="/monthly/export/{{ month_str }}" class="btn btn-success">📥 خروجی اکسل</a>
+    <button type="submit" class="btn btn-primary btn-sm">🔄 نمایش</button>
+    <a href="/monthly/export/{{ month_str }}" class="btn btn-success btn-sm">📥 خروجی اکسل</a>
   </form>
 </div>
 
@@ -18,9 +18,9 @@
   {% for name, data in emp_totals.items() %}
   <div class="box">
     <div class="label">👤 {{ name }}</div>
-    <div style="font-size:12px;color:#7b1fa2">{{ data.count }} خدمت</div>
-    <div class="value green">{{ "{:,}".format(data.amount) }}<br><small style="font-size:12px">تومان</small></div>
-    {% if data.commission > 0 %}<div style="color:#e65100;font-weight:bold;font-size:13px">💸 پورسانت: {{ "{:,}".format(data.commission) }}</div>{% endif %}
+    <div style="font-size:12px;color:var(--text-muted);margin:4px 0">{{ data.count }} خدمت</div>
+    <div class="value green">{{ "{:,}".format(data.amount) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+    {% if data.commission > 0 %}<div style="color:var(--warning);font-weight:500;font-size:13px;margin-top:6px">💸 {{ "{:,}".format(data.commission) }}</div>{% endif %}
   </div>
   {% endfor %}
   {% if not emp_totals %}<div class="empty" style="width:100%">تراکنشی برای این ماه وجود ندارد</div>{% endif %}
@@ -31,10 +31,10 @@
     <thead><tr><th>کارمند</th><th>دسته خدمت</th><th>تعداد</th><th>جمع درآمد</th><th>پورسانت</th></tr></thead>
     <tbody>
     {% for d in details %}
-    <tr><td>{{ d.employee }}</td><td>{{ d.category }}</td><td>{{ d.count }}</td><td>{{ "{:,}".format(d.amount) }}</td><td>{{ "{:,}".format(d.commission) }}</td></tr>
+    <tr><td>{{ d.employee }}</td><td>{{ d.category }}</td><td>{{ d.count }}</td><td style="font-weight:600">{{ "{:,}".format(d.amount) }}</td><td>{{ "{:,}".format(d.commission) }}</td></tr>
     {% endfor %}
     {% if details %}
-    <tr style="background:#e91e63;color:#fff;font-weight:bold"><td>مجموع کل</td><td></td><td>{{ total_count }}</td><td>{{ "{:,}".format(grand_total) }}</td><td>{{ "{:,}".format(grand_comm) }}</td></tr>
+    <tr style="background:var(--primary);color:#fff;font-weight:600"><td>مجموع کل</td><td></td><td>{{ total_count }}</td><td>{{ "{:,}".format(grand_total) }}</td><td>{{ "{:,}".format(grand_comm) }}</td></tr>
     {% endif %}
     </tbody>
   </table>

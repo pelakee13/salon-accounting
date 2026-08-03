@@ -1,51 +1,70 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px;font-size:28px;font-weight:700;font-family:'Sahel',sans-serif">💇‍♀️ هلیا بیوتی — {{ today }}</h2>
+<h1 class="page-title">هلیا بیوتی — {{ today }}</h1>
 
 <form method="POST" action="/submit_transaction">
+
+<!-- ─── Customer Section ─── -->
 <div class="card">
-  <h2>اطلاعات مشتری</h2>
+  <h2>👤 اطلاعات مشتری</h2>
   <div class="form-row">
-    <div class="field"><label>نام مشتری *</label>
+    <div class="field">
+      <label>نام مشتری *</label>
       <select name="customer_name" id="customer_select" required onchange="fillCustomerPhone()">
-        <option value="">-- انتخاب یا تایپ نام --</option>
+        <option value="">— انتخاب مشتری —</option>
       </select>
-      <input name="customer_name_manual" id="customer_name_manual" placeholder="یا نام جدید را تایپ کنید" style="margin-top:5px;display:none" oninput="document.getElementById('customer_select').value=''">
+      <input name="customer_name_manual" id="customer_name_manual" placeholder="یا نام جدید را تایپ کنید" style="margin-top:6px;display:none" oninput="document.getElementById('customer_select').value=''">
     </div>
-    <div class="field"><label>📱 تلفن</label><input name="customer_phone" placeholder="شماره تلفن"></div>
+    <div class="field" style="max-width:200px">
+      <label>📱 تلفن</label>
+      <input name="customer_phone" id="customer_phone" placeholder="شماره تلفن">
+    </div>
   </div>
 </div>
 
+<!-- ─── Services Section ─── -->
 <div class="card">
-  <h2>خدمات انجام شده</h2>
-  <div id="items_list"></div>
-  <div class="form-row" style="margin-top:10px">
-    <div class="field"><label>خدمت</label>
+  <h2>🛎️ خدمات انجام شده</h2>
+  <div class="form-row">
+    <div class="field">
+      <label>خدمت</label>
       <select id="svc_select" onchange="fillPrice()">
-        {% for s in services %}<option value="{{ s.name }}" data-price="{{ s.default_price }}">{{ s.name }} - {{ "{:,}".format(s.default_price) }} تومان</option>{% endfor %}
+        {% for s in services %}<option value="{{ s.name }}" data-price="{{ s.default_price }}">{{ s.name }} — {{ "{:,}".format(s.default_price) }} تومان</option>{% endfor %}
       </select>
     </div>
-    <div class="field"><label>کارمند</label>
+    <div class="field">
+      <label>کارمند</label>
       <select id="emp_select">
         {% for e in employees %}<option value="{{ e.name }} ({{ e.specialty }})">{{ e.name }} ({{ e.specialty }})</option>{% endfor %}
       </select>
     </div>
-    <div class="field" style="max-width:160px"><label>مبلغ (تومان)</label><input type="number" id="amt_input" min="0"></div>
-    <div><label>&nbsp;</label><button type="button" class="btn btn-primary" onclick="addItem()">➕ افزودن</button></div>
+    <div class="field" style="max-width:180px">
+      <label>مبلغ (تومان)</label>
+      <input type="number" id="amt_input" min="0" placeholder="0">
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button type="button" class="btn btn-primary" onclick="addItem()">➕ افزودن</button>
+    </div>
   </div>
 
-  <table style="margin-top:10px" id="items_table">
-    <thead><tr><th>خدمت</th><th>کارمند</th><th>مبلغ</th><th>حذف</th></tr></thead>
+  <!-- Items Table -->
+  <table style="margin-top:14px" id="items_table">
+    <thead><tr><th>#</th><th>خدمت</th><th>کارمند</th><th>مبلغ</th><th></th></tr></thead>
     <tbody id="items_tbody"></tbody>
   </table>
+  <div id="empty_items" class="empty" style="padding:20px;font-size:13px">هنوز خدمتی اضافه نشده</div>
 
-  <div style="text-align:left;margin-top:10px">
-    <span style="font-size:18px;font-weight:bold;color:#2e7d32">جمع کل: <span id="total_display">۰</span> تومان</span>
+  <!-- Total -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+    <span style="font-size:13px;color:var(--text-secondary)">تعداد خدمات: <strong id="count_display">۰</strong></span>
+    <span style="font-size:18px;font-weight:700;color:var(--success)">جمع کل: <span id="total_display">۰</span> تومان</span>
   </div>
 </div>
 
-<div style="display:flex;gap:10px;margin-top:10px">
-  <button type="submit" class="btn btn-success" style="font-size:15px;padding:12px 30px">✅ ثبت نهایی</button>
+<!-- ─── Actions ─── -->
+<div style="display:flex;gap:10px;margin-top:8px">
+  <button type="submit" class="btn btn-success" style="font-size:15px;padding:14px 36px">✅ ثبت نهایی</button>
   <button type="button" class="btn btn-secondary" onclick="clearAll()">🗑️ پاک کردن</button>
 </div>
 </form>
@@ -54,7 +73,7 @@
 let customersData = [];
 let items = [];
 
-// Load customers list
+// Load customers
 fetch('/api/customers').then(r=>r.json()).then(data=>{
   customersData = data;
   let sel = document.getElementById('customer_select');
@@ -68,15 +87,19 @@ fetch('/api/customers').then(r=>r.json()).then(data=>{
 
 function fillCustomerPhone(){
   let sel = document.getElementById('customer_select');
-  let phoneInput = document.querySelector('input[name="customer_phone"]');
+  let phoneInput = document.getElementById('customer_phone');
   let manualInput = document.getElementById('customer_name_manual');
   if(sel.value){
     let cust = customersData.find(c=>c.name===sel.value);
     if(cust) phoneInput.value = cust.phone || '';
     manualInput.style.display = 'none';
+    phoneInput.readOnly = true;
+    phoneInput.style.opacity = '0.6';
   } else {
     manualInput.style.display = 'block';
     phoneInput.value = '';
+    phoneInput.readOnly = false;
+    phoneInput.style.opacity = '1';
   }
 }
 
@@ -85,37 +108,53 @@ function fillPrice(){
   let p = s.options[s.selectedIndex].getAttribute('data-price');
   document.getElementById('amt_input').value = p;
 }
+
 function addItem(){
   let svc = document.getElementById('svc_select');
   let emp = document.getElementById('emp_select');
   let amt = document.getElementById('amt_input').value;
-  if(!amt || parseInt(amt)<=0){alert('لطفاً مبلغ وارد کنید');return;}
+  if(!amt || parseInt(amt)<=0){alert('لطفاً مبلغ را وارد کنید');return;}
   items.push({service:svc.value, employee:emp.value, amount:parseInt(amt)});
   renderItems();
 }
+
 function removeItem(i){
   items.splice(i,1);
   renderItems();
 }
+
 function renderItems(){
   let tb = document.getElementById('items_tbody');
+  let emptyMsg = document.getElementById('empty_items');
   let total = 0;
   let html = '';
   items.forEach((it,i)=>{
     total += it.amount;
-    html += '<tr><td>'+it.service+'</td><td>'+it.employee.split(' (')[0]+'</td><td>'+it.amount.toLocaleString()+'</td><td><button type="button" class="btn btn-danger" onclick="removeItem('+i+')" style="padding:3px 8px">❌</button></td></tr>';
+    html += '<tr>';
+    html += '<td style="color:var(--text-muted);font-size:12px">'+(i+1)+'</td>';
+    html += '<td><strong>'+it.service+'</strong></td>';
+    html += '<td>'+it.employee.split(' (')[0]+'</td>';
+    html += '<td style="font-weight:600;color:var(--primary)">'+it.amount.toLocaleString()+' تومان</td>';
+    html += '<td><button type="button" class="btn btn-danger btn-sm" onclick="removeItem('+i+')">❌</button></td>';
+    html += '</tr>';
     html += '<input type="hidden" name="service[]" value="'+it.service+'">';
     html += '<input type="hidden" name="employee[]" value="'+it.employee+'">';
     html += '<input type="hidden" name="amount[]" value="'+it.amount+'">';
   });
   tb.innerHTML = html;
   document.getElementById('total_display').textContent = total.toLocaleString();
+  document.getElementById('count_display').textContent = items.length;
+  emptyMsg.style.display = items.length ? 'none' : 'block';
+  document.getElementById('items_table').style.display = items.length ? 'table' : 'none';
 }
+
 function clearAll(){
   items = [];
   renderItems();
   document.getElementById('total_display').textContent = '۰';
+  document.getElementById('count_display').textContent = '۰';
 }
+
 fillPrice();
 </script>
 {% endblock %}

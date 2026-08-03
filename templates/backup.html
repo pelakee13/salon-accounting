@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px">📦 بکاپ و خروجی اکسل</h2>
+<h1 class="page-title">📦 بکاپ و خروجی اکسل</h1>
 
 <div class="card">
   <h2>بکاپ سریع</h2>
   <form method="POST" style="display:flex;gap:10px;flex-wrap:wrap">
-    <button name="action" value="daily" class="btn btn-primary" style="padding:12px 16px">📅 بکاپ روزانه<br><small>امروز</small></button>
-    <button name="action" value="weekly" class="btn btn-primary" style="padding:12px 16px">📆 بکاپ هفتگی<br><small>۷ روز اخیر</small></button>
-    <button name="action" value="monthly" class="btn btn-primary" style="padding:12px 16px">🗓️ بکاپ ماهانه<br><small>این ماه</small></button>
-    <button name="action" value="full" class="btn btn-success" style="padding:12px 16px">📦 بکاپ کامل<br><small>همه داده‌ها</small></button>
+    <button name="action" value="daily" class="btn btn-primary" style="padding:14px 18px">📅 روزانه<br><small style="opacity:0.8">امروز</small></button>
+    <button name="action" value="weekly" class="btn btn-primary" style="padding:14px 18px">📆 هفتگی<br><small style="opacity:0.8">۷ روز اخیر</small></button>
+    <button name="action" value="monthly" class="btn btn-primary" style="padding:14px 18px">🗓️ ماهانه<br><small style="opacity:0.8">این ماه</small></button>
+    <button name="action" value="full" class="btn btn-success" style="padding:14px 18px">📦 کامل<br><small style="opacity:0.8">همه داده‌ها</small></button>
   </form>
 </div>
 
@@ -30,7 +30,7 @@
     {% for b in backups %}
     <tr>
       <td>{{ b.filename }}</td><td>{{ b.date }}</td><td>{{ b.size }}</td>
-      <td><a href="/download/{{ b.filename }}" class="btn btn-secondary" style="padding:3px 10px;font-size:11px">📥 دانلود</a></td>
+      <td><a href="/download/{{ b.filename }}" class="btn btn-secondary btn-sm">📥 دانلود</a></td>
     </tr>
     {% endfor %}
     </tbody>

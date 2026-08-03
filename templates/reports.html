@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px">📊 گزارش امروز — {{ today }}</h2>
+<h1 class="page-title">📊 گزارش امروز — {{ today }}</h1>
 
 <div class="summary">
-  <div class="box"><div class="label">💰 جمع کل امروز</div><div class="value green">{{ "{:,}".format(total) }}</div></div>
-  <div class="box"><div class="label">👥 تعداد مشتری</div><div class="value">{{ customers }}</div></div>
-  <div class="box"><div class="label">🛎️ تعداد خدمات</div><div class="value">{{ services_count }}</div></div>
-  <div class="box"><div class="label">💸 پورسانت کارمندان</div><div class="value orange">{{ "{:,}".format(commission) }}</div></div>
+  <div class="box"><div class="label">💰 جمع کل امروز</div><div class="value green">{{ "{:,}".format(total) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
+  <div class="box"><div class="label">👥 مشتری</div><div class="value">{{ customers }}</div></div>
+  <div class="box"><div class="label">🛎️ خدمات</div><div class="value">{{ services_count }}</div></div>
+  <div class="box"><div class="label">💸 پورسانت</div><div class="value orange">{{ "{:,}".format(commission) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
 </div>
 
 <div class="card">
@@ -14,7 +14,7 @@
     <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th><th>پورسانت</th></tr></thead>
     <tbody>
     {% for t in transactions %}
-    <tr><td>{{ t.date }}</td><td>{{ t.customer }}</td><td>{{ t.service }}</td><td>{{ t.category }}</td><td>{{ t.employee }}</td><td>{{ "{:,}".format(t.amount) }}</td><td>{{ "{:,}".format(t.commission) }}</td></tr>
+    <tr><td>{{ t.date }}</td><td>{{ t.customer }}</td><td>{{ t.service }}</td><td>{{ t.category }}</td><td>{{ t.employee }}</td><td style="font-weight:600">{{ "{:,}".format(t.amount) }}</td><td>{{ "{:,}".format(t.commission) }}</td></tr>
     {% endfor %}
     </tbody>
   </table>

@@ -1,23 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px">👥 مدیریت کارمندان</h2>
-
-<div id="modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:25px;width:400px;max-width:90vw">
-    <h3 id="modal_title" style="color:#e91e63;margin-bottom:15px">افزودن کارمند</h3>
-    <form method="POST">
-      <input type="hidden" name="action" id="f_action" value="add">
-      <input type="hidden" name="idx" id="f_idx" value="">
-      <div style="margin-bottom:10px"><label>نام *</label><input name="name" id="f_name" required></div>
-      <div style="margin-bottom:10px"><label>تخصص</label>
-        <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option></select>
-      </div>
-      <div style="margin-bottom:10px"><label>تلفن</label><input name="phone" id="f_phone"></div>
-      <div style="margin-bottom:15px"><label>درصد سهم (پورسانت)</label><input type="number" name="share" id="f_share" value="0" min="0" max="100"></div>
-      <div style="display:flex;gap:8px"><button type="submit" class="btn btn-success">ذخیره</button><button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button></div>
-    </form>
-  </div>
-</div>
+<h1 class="page-title">👥 مدیریت کارمندان</h1>
 
 <div class="card">
   <table>
@@ -25,12 +8,12 @@
     <tbody>
     {% for e in employees %}
     <tr>
-      <td>{{ e.name }}</td><td>{{ e.specialty }}</td><td>{{ e.phone }}</td><td>{{ e.share_percent }}%</td>
-      <td>
-        <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" onclick="editEmp({{ loop.index0 }},'{{ e.name }}','{{ e.specialty }}','{{ e.phone }}',{{ e.share_percent }})">✏️</button>
+      <td><strong>{{ e.name }}</strong></td><td>{{ e.specialty }}</td><td>{{ e.phone }}</td><td>{{ e.share_percent }}%</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm" onclick="editEmp({{ loop.index0 }},'{{ e.name }}','{{ e.specialty }}','{{ e.phone }}',{{ e.share_percent }})">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('حذف {{ e.name }}؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
-          <button class="btn btn-danger" style="padding:3px 8px;font-size:11px">❌</button>
+          <button class="btn btn-danger btn-sm">❌</button>
         </form>
       </td>
     </tr>
@@ -40,7 +23,26 @@
   {% if not employees %}<div class="empty">کارمندی ثبت نشده</div>{% endif %}
 </div>
 
-<button class="btn btn-primary" style="position:fixed;bottom:20px;left:20px;font-size:15px;padding:12px 20px;border-radius:50px" onclick="openAdd()">➕ افزودن کارمند</button>
+<button class="btn btn-primary" style="position:fixed;bottom:24px;left:24px;padding:14px 24px;border-radius:50px;box-shadow:var(--shadow-lg)" onclick="openAdd()">➕ افزودن کارمند</button>
+
+<div id="modal" class="modal-overlay">
+  <div class="modal-content">
+    <h3 id="modal_title">افزودن کارمند</h3>
+    <form method="POST">
+      <input type="hidden" name="action" id="f_action" value="add">
+      <input type="hidden" name="idx" id="f_idx" value="">
+      <label>نام *</label><input name="name" id="f_name" required>
+      <label>تخصص</label>
+      <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option></select>
+      <label>تلفن</label><input name="phone" id="f_phone">
+      <label>درصد سهم (پورسانت)</label><input type="number" name="share" id="f_share" value="0" min="0" max="100">
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-success">ذخیره</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 function openAdd(){
