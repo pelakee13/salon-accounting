@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""وب‌اپ حسابداری سالن آرایش — Flask version"""
+"""وب‌اپ حسابداری هلیا بیوتی — Flask version"""
 import os, sys, json
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -69,7 +69,7 @@ DEFAULT_SERVICES = [
 ]
 
 # ─── Excel Manager ───
-PINK = PatternFill(start_color="E91E63", end_color="E91E63", fill_type="solid")
+PINK = PatternFill(start_color="D81B60", end_color="D81B60", fill_type="solid")
 HDR_FONT = Font(bold=True, color="FFFFFF")
 
 def _ensure_workbook(fp, headers):
@@ -94,8 +94,12 @@ def init_all():
         wb2 = load_workbook(SERVICES_FILE); ws2 = wb2.active
         for s in DEFAULT_SERVICES: ws2.append([s["name"],s["category"],s["default_price"]])
         wb2.save(SERVICES_FILE)
-    _ensure_workbook(TRANSACTIONS_FILE, ["تاریخ","نام مشتری","نام خدمت","دسته‌بندی","نام کارمند","مبلغ (تومان)","یادداشت"])
-    _ensure_workbook(CUSTOMERS_FILE, ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت"])
+    # Updated transaction headers with new fields
+    _ensure_workbook(TRANSACTIONS_FILE, [
+        "تاریخ","نام مشتری","نام خدمت","دسته‌بندی","نام کارمند",
+        "مبلغ خالص","تخفیف","مبلغ نهایی","روش پرداخت","پورسانت کارمند","سهم سالن","یادداشت"
+    ])
+    _ensure_workbook(CUSTOMERS_FILE, ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت","امتیاز"])
 
 def _read_rows(fp):
     if not os.path.exists(fp): return []
@@ -126,13 +130,19 @@ def save_services(svcs):
 
 def get_customers():
     rows = _read_rows(CUSTOMERS_FILE)
-    return [{"name":str(r[0]),"phone":str(r[1] or ""),"specialty":str(r[2] or ""),"join_date":str(r[3] or ""),"visit_count":int(r[4] or 0),"note":str(r[5] or "")} for r in rows]
+    result = []
+    for r in rows:
+        cust = {"name":str(r[0]),"phone":str(r[1] or ""),"specialty":str(r[2] or ""),"join_date":str(r[3] or ""),"visit_count":int(r[4] or 0),"note":str(r[5] or "")}
+        # Handle optional points column
+        cust["points"] = int(r[6]) if len(r) > 6 and r[6] else 0
+        result.append(cust)
+    return result
 
 def save_customers(custs):
     wb = Workbook(); ws = wb.active; ws.title = "داده‌ها"
-    for c, h in enumerate(["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت"], 1):
+    for c, h in enumerate(["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت","امتیاز"], 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
-    for cu in custs: ws.append([cu["name"],cu["phone"],cu["specialty"],cu["join_date"],cu["visit_count"],cu["note"]])
+    for cu in custs: ws.append([cu["name"],cu["phone"],cu["specialty"],cu["join_date"],cu["visit_count"],cu["note"],cu.get("points",0)])
     wb.save(CUSTOMERS_FILE)
 
 def get_transactions(start_date=None, end_date=None):
@@ -140,15 +150,25 @@ def get_transactions(start_date=None, end_date=None):
     wb = load_workbook(TRANSACTIONS_FILE); ws = wb.active; txns = []
     for row in ws.iter_rows(min_row=2, values_only=True):
         if not row[0]: continue
-        t = {"date":str(row[0]),"customer":str(row[1]),"service":str(row[2]),"category":str(row[3]),"employee":str(row[4]),"amount":int(row[5] or 0),"note":str(row[6] or "")}
+        t = {
+            "date":str(row[0]),"customer":str(row[1]),"service":str(row[2]),
+            "category":str(row[3]),"employee":str(row[4]),
+            "amount":int(row[5] or 0),
+            "discount":int(row[6] or 0),
+            "final_amount":int(row[7] or 0),
+            "payment_method":str(row[8] or "نقدی"),
+            "commission":int(row[9] or 0),
+            "salon_share":int(row[10] or 0),
+            "note":str(row[11] or "")
+        }
         if start_date and end_date:
             if start_date <= t["date"] <= end_date: txns.append(t)
         else: txns.append(t)
     return txns
 
-def add_transaction(date_str, customer, service, category, employee, amount, note=""):
+def add_transaction(date_str, customer, service, category, employee, amount, discount=0, final_amount=0, payment_method="نقدی", commission=0, salon_share=0, note=""):
     wb = load_workbook(TRANSACTIONS_FILE); ws = wb.active
-    ws.append([date_str, customer, service, category, employee, int(amount), note])
+    ws.append([date_str, customer, service, category, employee, int(amount), int(discount), int(final_amount), payment_method, int(commission), int(salon_share), note])
     wb.save(TRANSACTIONS_FILE)
 
 def delete_transaction(index):
@@ -158,17 +178,17 @@ def delete_transaction(index):
 # ─── Backup Helper ───
 def create_backup_excel(transactions, filename):
     wb = Workbook(); ws = wb.active; ws.title = "تراکنش‌ها"
-    headers = ["تاریخ","مشتری","خدمت","دسته","کارمند","مبلغ","پورسانت","یادداشت"]
+    headers = ["تاریخ","مشتری","خدمت","دسته","کارمند","مبلغ خالص","تخفیف","مبلغ نهایی","روش پرداخت","پورسانت","سهم سالن","یادداشت"]
     for c, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
-    emp_shares = {e["name"]: e["share_percent"] for e in get_employees()}
     for r, t in enumerate(transactions, 2):
-        ws.cell(row=r, column=1, value=t["date"]); ws.cell(row=r, column=2, value=t["customer"])
-        ws.cell(row=r, column=3, value=t["service"]); ws.cell(row=r, column=4, value=t["category"])
-        ws.cell(row=r, column=5, value=t["employee"]); ws.cell(row=r, column=6, value=t["amount"])
-        ws.cell(row=r, column=7, value=int(t["amount"]*emp_shares.get(t["employee"],0)/100))
-        ws.cell(row=r, column=8, value=t["note"])
-    for c in range(1,9): ws.column_dimensions[get_column_letter(c)].width = 16
+        ws.cell(row=r,column=1,value=t["date"]); ws.cell(row=r,column=2,value=t["customer"])
+        ws.cell(row=r,column=3,value=t["service"]); ws.cell(row=r,column=4,value=t["category"])
+        ws.cell(row=r,column=5,value=t["employee"]); ws.cell(row=r,column=6,value=t["amount"])
+        ws.cell(row=r,column=7,value=t.get("discount",0)); ws.cell(row=r,column=8,value=t.get("final_amount",t["amount"]))
+        ws.cell(row=r,column=9,value=t.get("payment_method","نقدی")); ws.cell(row=r,column=10,value=t.get("commission",0))
+        ws.cell(row=r,column=11,value=t.get("salon_share",0)); ws.cell(row=r,column=12,value=t.get("note",""))
+    for c in range(1,13): ws.column_dimensions[get_column_letter(c)].width = 16
     fp = os.path.join(DATA_DIR, filename); wb.save(fp); return fp
 
 def _file_size(fp):
@@ -181,11 +201,6 @@ def index():
     return render_template("index.html", today=PersianDate.today_str(),
         services=get_services(), employees=get_employees())
 
-@app.route("/add_item", methods=["POST"])
-def add_item():
-    """Add a transaction item (stored in session-like approach via JS)"""
-    return jsonify({"ok": True})
-
 @app.route("/submit_transaction", methods=["POST"])
 def submit_transaction():
     data = request.form
@@ -194,19 +209,93 @@ def submit_transaction():
     services = data.getlist("service[]")
     employees = data.getlist("employee[]")
     amounts = data.getlist("amount[]")
+    discount_type = data.get("discount_type", "amount")  # "amount" or "percent"
+    discount_value = int(data.get("discount_value", 0) or 0)
+    payment_method = data.get("payment_method", "نقدی")
+    send_sms = data.get("send_sms", "")
+    use_points = data.get("use_points", "")
+    
     if not customer:
         flash("لطفاً نام مشتری را وارد کنید", "error"); return redirect(url_for("index"))
     if not services:
         flash("حداقل یک خدمت اضافه کنید", "error"); return redirect(url_for("index"))
+    
     today = PersianDate.today_str()
+    emps = get_employees()
+    emp_shares = {e["name"]: e["share_percent"] for e in emps}
+    
+    # Calculate subtotal
+    subtotal = 0
+    items_data = []
     for svc, emp, amt in zip(services, employees, amounts):
         if not amt or not amt.isdigit(): continue
-        svcs = get_services(); emps = get_employees()
-        svc_obj = next((s for s in svcs if s["name"] == svc.split(" - ")[0]), None)
-        cat = svc_obj["category"] if svc_obj else ""
+        amount = int(amt)
+        subtotal += amount
         emp_name = emp.split(" (")[0] if " (" in emp else emp
-        add_transaction(today, customer, svc.split(" - ")[0], cat, emp_name, int(amt), phone)
-    flash(f"✅ تراکنش ثبت شد! مشتری: {customer}", "success")
+        commission = int(amount * emp_shares.get(emp_name, 0) / 100)
+        salon_share = amount - commission
+        items_data.append({
+            "service": svc.split(" - ")[0],
+            "employee": emp_name,
+            "amount": amount,
+            "commission": commission,
+            "salon_share": salon_share
+        })
+    
+    # Calculate discount
+    if discount_type == "percent":
+        discount_amount = int(subtotal * discount_value / 100)
+    else:
+        discount_amount = discount_value
+    
+    final_amount = max(0, subtotal - discount_amount)
+    
+    # Use points if selected
+    points_used = 0
+    if use_points == "on" and customer:
+        custs = get_customers()
+        cust = next((c for c in custs if c["name"] == customer), None)
+        if cust and cust.get("points", 0) > 0:
+            points_used = min(cust["points"], final_amount // 1000)  # Each 1000 tomans = 1 point
+            final_amount = max(0, final_amount - points_used * 1000)
+            cust["points"] -= points_used
+            save_customers(custs)
+    
+    # Add transactions
+    for item in items_data:
+        add_transaction(
+            today, customer, item["service"], "", item["employee"],
+            item["amount"], discount_amount // len(items_data) if items_data else 0,
+            final_amount // len(items_data) if items_data else 0,
+            payment_method, item["commission"], item["salon_share"], phone
+        )
+    
+    # Update customer visit count and points
+    if customer:
+        custs = get_customers()
+        cust = next((c for c in custs if c["name"] == customer), None)
+        if cust:
+            cust["visit_count"] += 1
+            cust["points"] = cust.get("points", 0) + (final_amount // 10000)  # 1 point per 10000 tomans
+            save_customers(custs)
+        else:
+            # Auto-add new customer
+            custs.append({
+                "name": customer, "phone": phone, "specialty": "",
+                "join_date": today, "visit_count": 1, "note": "",
+                "points": final_amount // 10000
+            })
+            save_customers(custs)
+    
+    # Handle credit/debt
+    if payment_method == "نسیه":
+        flash(f"⚠️ فاکتور نسیه ثبت شد! مشتری: {customer} — مبلغ: {final_amount:,} تومان", "info")
+    else:
+        flash(f"✅ تراکنش ثبت شد! مشتری: {customer} — مبلغ نهایی: {final_amount:,} تومان", "success")
+    
+    if send_sms == "on":
+        flash(f"📱 پیامک فاکتور برای {customer} ارسال خواهد شد (قابلیت در دست ساخت)", "info")
+    
     return redirect(url_for("index"))
 
 @app.route("/reports")
@@ -215,11 +304,11 @@ def reports():
     txns = get_transactions(start_date=today, end_date=today)
     emps = get_employees()
     emp_shares = {e["name"]: e["share_percent"] for e in emps}
-    total = sum(t["amount"] for t in txns)
+    total = sum(t.get("final_amount", t["amount"]) for t in txns)
     customers = len(set(t["customer"] for t in txns))
-    commission = sum(int(t["amount"]*emp_shares.get(t["employee"],0)/100) for t in txns)
+    commission = sum(t.get("commission", 0) for t in txns)
     for t in txns:
-        t["commission"] = int(t["amount"]*emp_shares.get(t["employee"],0)/100)
+        t["commission"] = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
     return render_template("reports.html", transactions=list(reversed(txns)),
         total=total, customers=customers, services_count=len(txns),
         commission=commission, today=today)
@@ -238,23 +327,23 @@ def monthly():
     emp_shares = {e["name"]: e["share_percent"] for e in get_employees()}
     emp_totals = defaultdict(lambda: {"count":0,"amount":0,"commission":0})
     for t in monthly_txns:
-        c = int(t["amount"]*emp_shares.get(t["employee"],0)/100)
+        c = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
         emp_totals[t["employee"]]["count"] += 1
-        emp_totals[t["employee"]]["amount"] += t["amount"]
+        emp_totals[t["employee"]]["amount"] += t.get("final_amount", t["amount"])
         emp_totals[t["employee"]]["commission"] += c
     emp_cat = defaultdict(lambda: defaultdict(lambda: {"count":0,"amount":0,"commission":0}))
     for t in monthly_txns:
-        c = int(t["amount"]*emp_shares.get(t["employee"],0)/100)
+        c = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
         emp_cat[t["employee"]][t["category"]]["count"] += 1
-        emp_cat[t["employee"]][t["category"]]["amount"] += t["amount"]
+        emp_cat[t["employee"]][t["category"]]["amount"] += t.get("final_amount", t["amount"])
         emp_cat[t["employee"]][t["category"]]["commission"] += c
     details = []
     for en in sorted(emp_cat.keys()):
         for cn in sorted(emp_cat[en].keys()):
             d = emp_cat[en][cn]
             details.append({"employee":en,"category":cn,"count":d["count"],"amount":d["amount"],"commission":d["commission"]})
-    grand_total = sum(t["amount"] for t in monthly_txns)
-    grand_comm = sum(int(t["amount"]*emp_shares.get(t["employee"],0)/100) for t in monthly_txns)
+    grand_total = sum(t.get("final_amount", t["amount"]) for t in monthly_txns)
+    grand_comm = sum(t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100)) for t in monthly_txns)
     months = [f"{yy}/{mm:02d}" for yy in range(1400,1410) for mm in range(1,13)]
     return render_template("monthly.html", month_str=month_str, months=months,
         emp_totals=dict(emp_totals), details=details,
@@ -277,9 +366,9 @@ def export_monthly(month_str):
     for r, t in enumerate(monthly_txns, 2):
         ws.cell(row=r,column=1,value=t["date"]); ws.cell(row=r,column=2,value=t["customer"])
         ws.cell(row=r,column=3,value=t["service"]); ws.cell(row=r,column=4,value=t["category"])
-        ws.cell(row=r,column=5,value=t["employee"]); ws.cell(row=r,column=6,value=t["amount"])
-        ws.cell(row=r,column=7,value=int(t["amount"]*emp_shares.get(t["employee"],0)/100))
-        ws.cell(row=r,column=8,value=t["note"])
+        ws.cell(row=r,column=5,value=t["employee"]); ws.cell(row=r,column=6,value=t.get("final_amount",t["amount"]))
+        ws.cell(row=r,column=7,value=t.get("commission",int(t["amount"]*emp_shares.get(t["employee"],0)/100)))
+        ws.cell(row=r,column=8,value=t.get("note",""))
     for c in range(1,9): ws.column_dimensions[get_column_letter(c)].width = 18
     fp = os.path.join(DATA_DIR, f"report_{y}_{m:02d}.xlsx"); wb.save(fp)
     return send_file(fp, as_attachment=True)
@@ -290,10 +379,10 @@ def customers_page():
         action = request.form.get("action")
         custs = get_customers()
         if action == "add":
-            custs.append({"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":PersianDate.today_str(),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note","")})
+            custs.append({"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":PersianDate.today_str(),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":0})
         elif action == "edit":
             idx = int(request.form["idx"])
-            custs[idx] = {"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":custs[idx]["join_date"],"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note","")}
+            custs[idx] = {"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":custs[idx]["join_date"],"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":custs[idx].get("points",0)}
         elif action == "delete":
             custs.pop(int(request.form["idx"]))
         save_customers(custs)
@@ -308,14 +397,15 @@ def customers_page():
 def export_customers():
     custs = get_customers()
     wb = Workbook(); ws = wb.active; ws.title = "دفترچه مشتریان"
-    headers = ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت"]
+    headers = ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت","امتیاز"]
     for c, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
     for r, cu in enumerate(custs, 2):
         ws.cell(row=r,column=1,value=cu["name"]); ws.cell(row=r,column=2,value=cu["phone"])
         ws.cell(row=r,column=3,value=cu["specialty"]); ws.cell(row=r,column=4,value=cu["join_date"])
         ws.cell(row=r,column=5,value=cu["visit_count"]); ws.cell(row=r,column=6,value=cu["note"])
-    for c in range(1,7): ws.column_dimensions[get_column_letter(c)].width = 18
+        ws.cell(row=r,column=7,value=cu.get("points",0))
+    for c in range(1,8): ws.column_dimensions[get_column_letter(c)].width = 18
     fp = os.path.join(DATA_DIR, f"customers_{PersianDate.today_str().replace('/','-')}.xlsx")
     wb.save(fp)
     return send_file(fp, as_attachment=True)
@@ -394,7 +484,6 @@ def backup_page():
                 flash(f"✅ بکاپ ذخیره شد! ({len(txns)} تراکنش)","success")
             else: flash("تراکنشی در این بازه نیست","info")
         return redirect(url_for("backup_page"))
-    # List existing backups
     backups = []
     if os.path.exists(DATA_DIR):
         for f in sorted(os.listdir(DATA_DIR), reverse=True):
@@ -411,7 +500,7 @@ def download(filename):
     if os.path.exists(fp): return send_file(fp, as_attachment=True)
     flash("فایل یافت نشد","error"); return redirect(url_for("backup_page"))
 
-# ─── API for transaction form ───
+# ─── API ───
 @app.route("/api/services")
 def api_services():
     return jsonify(get_services())
@@ -423,6 +512,19 @@ def api_employees():
 @app.route("/api/customers")
 def api_customers():
     return jsonify(get_customers())
+
+@app.route("/api/calculate_commission", methods=["POST"])
+def api_calculate_commission():
+    data = request.json
+    emp_name = data.get("employee", "")
+    amount = int(data.get("amount", 0))
+    emps = get_employees()
+    emp = next((e for e in emps if e["name"] == emp_name), None)
+    if emp:
+        commission = int(amount * emp["share_percent"] / 100)
+        salon_share = amount - commission
+        return jsonify({"commission": commission, "salon_share": salon_share, "percent": emp["share_percent"]})
+    return jsonify({"commission": 0, "salon_share": amount, "percent": 0})
 
 # ─── Run ───
 if __name__ == "__main__":

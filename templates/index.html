@@ -2,7 +2,7 @@
 {% block content %}
 <h1 class="page-title">هلیا بیوتی — {{ today }}</h1>
 
-<form method="POST" action="/submit_transaction">
+<form method="POST" action="/submit_transaction" id="invoiceForm">
 
 <!-- ─── Customer Section ─── -->
 <div class="card">
@@ -19,6 +19,10 @@
       <label>📱 تلفن</label>
       <input name="customer_phone" id="customer_phone" placeholder="شماره تلفن">
     </div>
+    <div class="field" style="max-width:120px">
+      <label>🎯 امتیاز</label>
+      <input type="text" id="customer_points" readonly style="background:#f5f5f5;font-weight:600;color:var(--primary)" value="0">
+    </div>
   </div>
 </div>
 
@@ -34,13 +38,13 @@
     </div>
     <div class="field">
       <label>کارمند</label>
-      <select id="emp_select">
-        {% for e in employees %}<option value="{{ e.name }} ({{ e.specialty }})">{{ e.name }} ({{ e.specialty }})</option>{% endfor %}
+      <select id="emp_select" onchange="updateCommissionPreview()">
+        {% for e in employees %}<option value="{{ e.name }}" data-share="{{ e.share_percent }}">{{ e.name }} ({{ e.specialty }})</option>{% endfor %}
       </select>
     </div>
     <div class="field" style="max-width:180px">
       <label>مبلغ (تومان)</label>
-      <input type="number" id="amt_input" min="0" placeholder="0">
+      <input type="number" id="amt_input" min="0" placeholder="0" oninput="updateCommissionPreview()">
     </div>
     <div>
       <label>&nbsp;</label>
@@ -48,30 +52,124 @@
     </div>
   </div>
 
+  <!-- Commission Preview -->
+  <div id="commission_preview" style="display:none;background:var(--surface-alt);border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px;border:1px solid var(--border)">
+    <span style="color:var(--text-muted)">پیش‌بینی کمیسیون:</span>
+    <span style="color:var(--success);font-weight:600" id="comm_preview_emp">۰</span>
+    <span style="color:var(--text-muted)"> کارمند</span>
+    <span style="margin:0 8px;color:var(--border)">|</span>
+    <span style="color:var(--primary);font-weight:600" id="comm_preview_salon">۰</span>
+    <span style="color:var(--text-muted)"> سالن</span>
+  </div>
+
   <!-- Items Table -->
   <table style="margin-top:14px" id="items_table">
-    <thead><tr><th>#</th><th>خدمت</th><th>کارمند</th><th>مبلغ</th><th></th></tr></thead>
+    <thead><tr><th>#</th><th>خدمت</th><th>کارمند</th><th>مبلغ</th><th>کمیسیون</th><th></th></tr></thead>
     <tbody id="items_tbody"></tbody>
   </table>
   <div id="empty_items" class="empty" style="padding:20px;font-size:13px">هنوز خدمتی اضافه نشده</div>
+</div>
 
-  <!-- Total -->
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-    <span style="font-size:13px;color:var(--text-secondary)">تعداد خدمات: <strong id="count_display">۰</strong></span>
-    <span style="font-size:18px;font-weight:700;color:var(--success)">جمع کل: <span id="total_display">۰</span> تومان</span>
+<!-- ─── Discount & Payment Section (Collapsible) ─── -->
+<div class="card">
+  <h2 style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="toggleFinance()">
+    💰 مالی و پرداخت
+    <span id="finance_toggle" style="font-size:18px;transition:transform 0.3s">▼</span>
+  </h2>
+  <div id="finance_section" style="display:none">
+    <!-- Discount -->
+    <div style="background:var(--surface-alt);border-radius:8px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <label style="font-weight:600;margin-bottom:8px;display:block">🏷️ تخفیف</label>
+      <div class="form-row">
+        <div class="field" style="max-width:120px">
+          <label>نوع</label>
+          <select id="discount_type" onchange="updateTotals()">
+            <option value="amount">مبلغی (تومان)</option>
+            <option value="percent">درصدی (%)</option>
+          </select>
+        </div>
+        <div class="field" style="max-width:150px">
+          <label>مقدار تخفیف</label>
+          <input type="number" id="discount_value" min="0" value="0" oninput="updateTotals()">
+        </div>
+        <div class="field" style="max-width:200px">
+          <label>مبلغ تخفیف</label>
+          <input type="text" id="discount_display" readonly style="background:#f5f5f5;font-weight:600;color:var(--danger)" value="۰ تومان">
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Method -->
+    <div style="background:var(--surface-alt);border-radius:8px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <label style="font-weight:600;margin-bottom:8px;display:block">💳 روش پرداخت</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="payment-option" style="flex:1;min-width:100px">
+          <input type="radio" name="payment_method" value="نقدی" checked onchange="updatePaymentUI()"> 
+          <span class="payment-label">💵 نقدی</span>
+        </label>
+        <label class="payment-option" style="flex:1;min-width:100px">
+          <input type="radio" name="payment_method" value="کارت‌خوان" onchange="updatePaymentUI()">
+          <span class="payment-label">💳 کارت‌خوان</span>
+        </label>
+        <label class="payment-option" style="flex:1;min-width:100px">
+          <input type="radio" name="payment_method" value="کارت به کارت" onchange="updatePaymentUI()">
+          <span class="payment-label">🏦 کارت به کارت</span>
+        </label>
+        <label class="payment-option" style="flex:1;min-width:100px">
+          <input type="radio" name="payment_method" value="نسیه" onchange="updatePaymentUI()">
+          <span class="payment-label">📝 نسیه</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- SMS & Points -->
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="checkbox" name="send_sms" id="send_sms"> 📱 ارسال پیامک فاکتور
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="checkbox" name="use_points" id="use_points" onchange="updateTotals()"> 🎯 استفاده از امتیازات
+      </label>
+    </div>
   </div>
 </div>
 
-<!-- ─── Actions ─── -->
-<div style="display:flex;gap:10px;margin-top:8px">
-  <button type="submit" class="btn btn-success" style="font-size:15px;padding:14px 36px">✅ ثبت نهایی</button>
-  <button type="button" class="btn btn-secondary" onclick="clearAll()">🗑️ پاک کردن</button>
+<!-- ─── Summary & Submit ─── -->
+<div class="card" style="background:linear-gradient(135deg,#fff 0%,#fce4ec 100%)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">تعداد خدمات: <strong id="count_display">۰</strong></div>
+      <div style="font-size:13px;color:var(--text-secondary)">جمع خالص: <strong id="subtotal_display">۰</strong> تومان</div>
+      <div id="discount_line" style="font-size:13px;color:var(--danger);display:none">تخفیف: <strong id="discount_line_val">۰</strong> تومان</div>
+      <div id="points_line" style="font-size:13px;color:var(--warning);display:none">امتیاز استفاده شده: <strong id="points_line_val">۰</strong></div>
+    </div>
+    <div style="text-align:left">
+      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">مبلغ نهایی</div>
+      <div style="font-size:28px;font-weight:700;color:var(--success)" id="final_amount_display">۰ <small style="font-size:14px;font-weight:400">تومان</small></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+    <button type="submit" class="btn btn-success" style="font-size:15px;padding:14px 36px">✅ ثبت نهایی</button>
+    <button type="button" class="btn btn-secondary" onclick="clearAll()">🗑️ پاک کردن</button>
+  </div>
 </div>
 </form>
+
+<style>
+.payment-option{
+  display:flex;align-items:center;gap:6px;padding:10px 14px;
+  background:var(--surface);border:2px solid var(--border);border-radius:8px;
+  cursor:pointer;transition:all 0.2s ease;text-align:center;justify-content:center
+}
+.payment-option:has(input:checked){border-color:var(--primary);background:#fce4ec}
+.payment-option:hover{border-color:var(--primary-light)}
+.payment-label{font-size:13px;font-weight:500}
+</style>
 
 <script>
 let customersData = [];
 let items = [];
+let customerPoints = 0;
 
 // Load customers
 fetch('/api/customers').then(r=>r.json()).then(data=>{
@@ -89,9 +187,14 @@ function fillCustomerPhone(){
   let sel = document.getElementById('customer_select');
   let phoneInput = document.getElementById('customer_phone');
   let manualInput = document.getElementById('customer_name_manual');
+  let pointsInput = document.getElementById('customer_points');
   if(sel.value){
     let cust = customersData.find(c=>c.name===sel.value);
-    if(cust) phoneInput.value = cust.phone || '';
+    if(cust){
+      phoneInput.value = cust.phone || '';
+      customerPoints = cust.points || 0;
+      pointsInput.value = customerPoints.toLocaleString();
+    }
     manualInput.style.display = 'none';
     phoneInput.readOnly = true;
     phoneInput.style.opacity = '0.6';
@@ -100,6 +203,8 @@ function fillCustomerPhone(){
     phoneInput.value = '';
     phoneInput.readOnly = false;
     phoneInput.style.opacity = '1';
+    customerPoints = 0;
+    pointsInput.value = '0';
   }
 }
 
@@ -107,6 +212,18 @@ function fillPrice(){
   let s = document.getElementById('svc_select');
   let p = s.options[s.selectedIndex].getAttribute('data-price');
   document.getElementById('amt_input').value = p;
+  updateCommissionPreview();
+}
+
+function updateCommissionPreview(){
+  let emp = document.getElementById('emp_select');
+  let amt = parseInt(document.getElementById('amt_input').value) || 0;
+  let share = parseFloat(emp.options[emp.selectedIndex].getAttribute('data-share')) || 0;
+  let comm = Math.round(amt * share / 100);
+  let salon = amt - comm;
+  document.getElementById('comm_preview_emp').textContent = comm.toLocaleString();
+  document.getElementById('comm_preview_salon').textContent = salon.toLocaleString();
+  document.getElementById('commission_preview').style.display = amt > 0 ? 'block' : 'none';
 }
 
 function addItem(){
@@ -114,27 +231,31 @@ function addItem(){
   let emp = document.getElementById('emp_select');
   let amt = document.getElementById('amt_input').value;
   if(!amt || parseInt(amt)<=0){alert('لطفاً مبلغ را وارد کنید');return;}
-  items.push({service:svc.value, employee:emp.value, amount:parseInt(amt)});
+  let share = parseFloat(emp.options[emp.selectedIndex].getAttribute('data-share')) || 0;
+  let amount = parseInt(amt);
+  let commission = Math.round(amount * share / 100);
+  items.push({service:svc.value, employee:emp.value, amount:amount, commission:commission});
   renderItems();
+  updateTotals();
 }
 
 function removeItem(i){
   items.splice(i,1);
   renderItems();
+  updateTotals();
 }
 
 function renderItems(){
   let tb = document.getElementById('items_tbody');
   let emptyMsg = document.getElementById('empty_items');
-  let total = 0;
   let html = '';
   items.forEach((it,i)=>{
-    total += it.amount;
     html += '<tr>';
     html += '<td style="color:var(--text-muted);font-size:12px">'+(i+1)+'</td>';
     html += '<td><strong>'+it.service+'</strong></td>';
-    html += '<td>'+it.employee.split(' (')[0]+'</td>';
+    html += '<td>'+it.employee+'</td>';
     html += '<td style="font-weight:600;color:var(--primary)">'+it.amount.toLocaleString()+' تومان</td>';
+    html += '<td style="font-size:12px;color:var(--success)">'+it.commission.toLocaleString()+'</td>';
     html += '<td><button type="button" class="btn btn-danger btn-sm" onclick="removeItem('+i+')">❌</button></td>';
     html += '</tr>';
     html += '<input type="hidden" name="service[]" value="'+it.service+'">';
@@ -142,17 +263,61 @@ function renderItems(){
     html += '<input type="hidden" name="amount[]" value="'+it.amount+'">';
   });
   tb.innerHTML = html;
-  document.getElementById('total_display').textContent = total.toLocaleString();
   document.getElementById('count_display').textContent = items.length;
   emptyMsg.style.display = items.length ? 'none' : 'block';
   document.getElementById('items_table').style.display = items.length ? 'table' : 'none';
 }
 
+function toggleFinance(){
+  let section = document.getElementById('finance_section');
+  let toggle = document.getElementById('finance_toggle');
+  if(section.style.display === 'none'){
+    section.style.display = 'block';
+    toggle.style.transform = 'rotate(180deg)';
+  } else {
+    section.style.display = 'none';
+    toggle.style.transform = 'rotate(0deg)';
+  }
+}
+
+function updateTotals(){
+  let subtotal = items.reduce((sum,it) => sum + it.amount, 0);
+  let discountType = document.getElementById('discount_type').value;
+  let discountVal = parseInt(document.getElementById('discount_value').value) || 0;
+  let discountAmount = discountType === 'percent' ? Math.round(subtotal * discountVal / 100) : discountVal;
+  let finalAmount = Math.max(0, subtotal - discountAmount);
+  
+  // Points
+  let usePoints = document.getElementById('use_points').checked;
+  let pointsUsed = 0;
+  if(usePoints && customerPoints > 0){
+    pointsUsed = Math.min(customerPoints, Math.floor(finalAmount / 1000));
+    finalAmount = Math.max(0, finalAmount - pointsUsed * 1000);
+  }
+  
+  document.getElementById('subtotal_display').textContent = subtotal.toLocaleString();
+  document.getElementById('discount_display').textContent = discountAmount.toLocaleString() + ' تومان';
+  document.getElementById('discount_line').style.display = discountAmount > 0 ? 'block' : 'none';
+  document.getElementById('discount_line_val').textContent = discountAmount.toLocaleString();
+  document.getElementById('points_line').style.display = pointsUsed > 0 ? 'block' : 'none';
+  document.getElementById('points_line_val').textContent = pointsUsed;
+  document.getElementById('final_amount_display').innerHTML = finalAmount.toLocaleString() + ' <small style="font-size:14px;font-weight:400">تومان</small>';
+}
+
+function updatePaymentUI(){
+  // Future: update UI based on payment method
+}
+
 function clearAll(){
   items = [];
   renderItems();
-  document.getElementById('total_display').textContent = '۰';
   document.getElementById('count_display').textContent = '۰';
+  document.getElementById('subtotal_display').textContent = '۰';
+  document.getElementById('discount_value').value = '0';
+  document.getElementById('discount_display').textContent = '۰ تومان';
+  document.getElementById('discount_line').style.display = 'none';
+  document.getElementById('points_line').style.display = 'none';
+  document.getElementById('final_amount_display').innerHTML = '۰ <small style="font-size:14px;font-weight:400">تومان</small>';
 }
 
 fillPrice();
