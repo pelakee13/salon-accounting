@@ -189,7 +189,7 @@ def add_item():
 @app.route("/submit_transaction", methods=["POST"])
 def submit_transaction():
     data = request.form
-    customer = data.get("customer_name","").strip()
+    customer = data.get("customer_name","").strip() or data.get("customer_name_manual","").strip()
     phone = data.get("customer_phone","").strip()
     services = data.getlist("service[]")
     employees = data.getlist("employee[]")
@@ -419,6 +419,10 @@ def api_services():
 @app.route("/api/employees")
 def api_employees():
     return jsonify(get_employees())
+
+@app.route("/api/customers")
+def api_customers():
+    return jsonify(get_customers())
 
 # ─── Run ───
 if __name__ == "__main__":

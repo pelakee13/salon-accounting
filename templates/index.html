@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 style="color:#e91e63;margin-bottom:15px">💇‍♀️ حسابداری سالن آرایش — {{ today }}</h2>
+<h2 style="color:#e91e63;margin-bottom:15px">💇‍♀️ هلیا بیوتی — {{ today }}</h2>
 
 <form method="POST" action="/submit_transaction">
 <div class="card">
   <h2>اطلاعات مشتری</h2>
   <div class="form-row">
-    <div class="field"><label>نام مشتری *</label><input name="customer_name" required placeholder="نام مشتری"></div>
+    <div class="field"><label>نام مشتری *</label>
+      <select name="customer_name" id="customer_select" required onchange="fillCustomerPhone()">
+        <option value="">-- انتخاب یا تایپ نام --</option>
+      </select>
+      <input name="customer_name_manual" id="customer_name_manual" placeholder="یا نام جدید را تایپ کنید" style="margin-top:5px;display:none" oninput="document.getElementById('customer_select').value=''">
+    </div>
     <div class="field"><label>📱 تلفن</label><input name="customer_phone" placeholder="شماره تلفن"></div>
   </div>
 </div>
@@ -46,7 +51,35 @@
 </form>
 
 <script>
+let customersData = [];
 let items = [];
+
+// Load customers list
+fetch('/api/customers').then(r=>r.json()).then(data=>{
+  customersData = data;
+  let sel = document.getElementById('customer_select');
+  data.forEach(c=>{
+    let opt = document.createElement('option');
+    opt.value = c.name;
+    opt.textContent = c.name + (c.phone ? ' (' + c.phone + ')' : '');
+    sel.appendChild(opt);
+  });
+});
+
+function fillCustomerPhone(){
+  let sel = document.getElementById('customer_select');
+  let phoneInput = document.querySelector('input[name="customer_phone"]');
+  let manualInput = document.getElementById('customer_name_manual');
+  if(sel.value){
+    let cust = customersData.find(c=>c.name===sel.value);
+    if(cust) phoneInput.value = cust.phone || '';
+    manualInput.style.display = 'none';
+  } else {
+    manualInput.style.display = 'block';
+    phoneInput.value = '';
+  }
+}
+
 function fillPrice(){
   let s = document.getElementById('svc_select');
   let p = s.options[s.selectedIndex].getAttribute('data-price');

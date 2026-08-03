@@ -3,20 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>حسابداری سالن آرایش</title>
+<title>هلیا بیوتی</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Tahoma,Tahoma,sans-serif;background:#fce4ec;color:#4a148c;min-height:100vh}
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+body{font-family:'Vazirmatn',Tahoma,sans-serif;background:linear-gradient(135deg,#fce4ec 0%,#f8bbd0 50%,#fce4ec 100%);color:#4a148c;min-height:100vh}
 a{color:#e91e63;text-decoration:none}
 a:hover{text-decoration:underline}
-.nav{background:#fff;padding:10px 20px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:2px solid #f8bbd0;position:sticky;top:0;z-index:100}
-.nav a{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:bold;transition:.2s}
-.nav a:hover,.nav a.active{background:#e91e63;color:#fff;text-decoration:none}
+.nav{background:linear-gradient(90deg,#fff 0%,#fce4ec 100%);padding:12px 20px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:3px solid #e91e63;position:sticky;top:0;z-index:100;box-shadow:0 2px 15px rgba(233,30,99,0.1)}
+.nav a{padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;transition:all .3s ease;letter-spacing:0.5px}
+.nav a:hover,.nav a.active{background:linear-gradient(135deg,#e91e63,#f06292);color:#fff;text-decoration:none;transform:translateY(-2px);box-shadow:0 4px 12px rgba(233,30,99,0.3)}
 .container{max-width:1100px;margin:0 auto;padding:15px}
-.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:15px;border:1px solid #f8bbd0}
-.card h2{color:#e91e63;margin-bottom:15px;font-size:18px}
+.card{background:rgba(255,255,255,0.95);border-radius:16px;padding:22px;margin-bottom:18px;border:1px solid #f8bbd0;box-shadow:0 4px 20px rgba(233,30,99,0.08);backdrop-filter:blur(10px)}
+.card h2{color:#e91e63;margin-bottom:15px;font-size:20px;font-weight:700}
 .summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:15px}
-.summary .box{flex:1;min-width:180px;background:#fff;border-radius:12px;padding:15px;text-align:center;border:1px solid #f8bbd0}
+.summary .box{flex:1;min-width:180px;background:rgba(255,255,255,0.95);border-radius:16px;padding:18px;text-align:center;border:1px solid #f8bbd0;box-shadow:0 4px 15px rgba(233,30,99,0.08);transition:transform .3s ease}
+.summary .box:hover{transform:translateY(-3px)}
 .summary .box .label{color:#7b1fa2;font-size:13px}
 .summary .box .value{font-size:26px;font-weight:bold;color:#e91e63;margin-top:5px}
 .summary .box .value.green{color:#2e7d32}
@@ -25,11 +27,11 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;over
 th{background:#fce4ec;color:#e91e63;padding:10px;font-size:13px;border-bottom:2px solid #f8bbd0}
 td{padding:9px 10px;border-bottom:1px solid #fce4ec;font-size:13px;text-align:right}
 tr:hover{background:#fce4ec}
-input,select,textarea{font-family:Tahoma,sans-serif;padding:8px 12px;border:1px solid #f8bbd0;border-radius:8px;font-size:13px;background:#fce4ec;color:#4a148c;direction:rtl;text-align:right;width:100%}
-input:focus,select:focus{outline:none;border-color:#e91e63;box-shadow:0 0 0 2px #f8bbd0}
-.btn{display:inline-block;padding:8px 18px;border:none;border-radius:8px;font-family:Tahoma,sans-serif;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;text-decoration:none}
-.btn-primary{background:#e91e63;color:#fff}.btn-primary:hover{background:#f06292}
-.btn-success{background:#2e7d32;color:#fff}.btn-success:hover{background:#27ae60}
+input,select,textarea{font-family:'Vazirmatn',sans-serif;padding:10px 14px;border:2px solid #f8bbd0;border-radius:12px;font-size:14px;font-weight:500;background:#fff;color:#4a148c;direction:rtl;text-align:right;width:100%;transition:all .3s ease}
+input:focus,select:focus{outline:none;border-color:#e91e63;box-shadow:0 0 0 3px rgba(233,30,99,0.15);background:#fff}
+.btn{display:inline-block;padding:10px 20px;border:none;border-radius:12px;font-family:'Vazirmatn',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .3s ease;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,#e91e63,#f06292);color:#fff}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(233,30,99,0.4)}
+.btn-success{background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff}.btn-success:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(46,125,50,0.4)}
 .btn-danger{background:#c62828;color:#fff}.btn-danger:hover{background:#c0392b}
 .btn-secondary{background:#f8bbd0;color:#4a148c}.btn-secondary:hover{background:#f48fb1}
 .form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
