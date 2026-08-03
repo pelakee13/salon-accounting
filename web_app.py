@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 # ─── Password ───
-LOGIN_PASSWORD = 'helia123'
+LOGIN_PASSWORD = '1234'
 
 # ─── Data Directory ───
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
