@@ -10,10 +10,11 @@
       </select>
     </div>
     <button type="submit" class="btn btn-primary btn-sm">🔄 نمایش</button>
-    <a href="/monthly/export/{{ month_str }}" class="btn btn-success btn-sm">📥 خروجی اکسل</a>
+    {% if details %}<a href="/monthly/export/{{ month_str }}" class="btn btn-success btn-sm">📥 خروجی اکسل</a>{% endif %}
   </form>
 </div>
 
+{% if emp_totals %}
 <div class="summary">
   {% for name, data in emp_totals.items() %}
   <div class="box">
@@ -23,7 +24,6 @@
     {% if data.commission > 0 %}<div style="color:var(--warning);font-weight:500;font-size:13px;margin-top:6px">💸 {{ "{:,}".format(data.commission) }}</div>{% endif %}
   </div>
   {% endfor %}
-  {% if not emp_totals %}<div class="empty" style="width:100%">تراکنشی برای این ماه وجود ندارد</div>{% endif %}
 </div>
 
 <div class="card">
@@ -39,4 +39,11 @@
     </tbody>
   </table>
 </div>
+{% else %}
+<div class="card" style="text-align:center;padding:60px 20px">
+  <div style="font-size:48px;margin-bottom:16px">📭</div>
+  <div style="font-size:16px;color:var(--text-secondary);font-weight:500">تراکنشی برای ماه {{ month_str }} وجود ندارد</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-top:8px">از منوی بالا ماه دیگری را انتخاب کنید</div>
+</div>
+{% endif %}
 {% endblock %}

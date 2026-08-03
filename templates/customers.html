@@ -27,10 +27,10 @@
       <td>{{ c.visit_count }}</td>
       <td>{{ c.note }}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-secondary btn-sm" onclick="editCust({{ loop.index0 }},'{{ c.name }}','{{ c.phone }}','{{ c.specialty }}',{{ c.visit_count }},'{{ c.note }}')">✏️</button>
+        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editCust({{ loop.index0 }},'{{ c.name }}','{{ c.phone }}','{{ c.specialty }}',{{ c.visit_count }},'{{ c.note }}')">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('آیا از حذف {{ c.name }} اطمینان دارید؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
-          <button class="btn btn-danger btn-sm">❌</button>
+          <button class="btn btn-danger btn-sm" style="min-width:40px;min-height:36px">❌</button>
         </form>
       </td>
     </tr>
@@ -52,7 +52,7 @@
       <input type="hidden" name="action" id="f_action" value="add">
       <input type="hidden" name="idx" id="f_idx" value="">
       <label>نام *</label><input name="name" id="f_name" required>
-      <label>تلفن</label><input name="phone" id="f_phone">
+      <label>تلفن</label><input name="phone" id="f_phone" placeholder="09123456789" pattern="^09\d{9}$" maxlength="11" title="شماره موبایل معتبر (11 رقمی با 09)" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
       <label>تخصص مورد علاقه</label>
       <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option><option>رنگ</option><option>شینیون</option></select>
       <label>تعداد مراجعه</label><input type="number" name="visits" id="f_visits" value="0">

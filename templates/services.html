@@ -10,10 +10,10 @@
     <tr>
       <td><strong>{{ s.name }}</strong></td><td>{{ s.category }}</td><td style="font-weight:600;color:var(--primary)">{{ "{:,}".format(s.default_price) }} تومان</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-secondary btn-sm" onclick="editSvc({{ loop.index0 }},'{{ s.name }}','{{ s.category }}',{{ s.default_price }})">✏️</button>
+        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editSvc({{ loop.index0 }},'{{ s.name }}','{{ s.category }}',{{ s.default_price }})">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('حذف {{ s.name }}؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
-          <button class="btn btn-danger btn-sm">❌</button>
+          <button class="btn btn-danger btn-sm" style="min-width:40px;min-height:36px">❌</button>
         </form>
       </td>
     </tr>
