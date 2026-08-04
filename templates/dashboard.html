@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">🏠 داشبورد — {{ today }}</h1>
+
+<!-- ─── Low Stock Alerts ─── -->
+{% if low_stock %}
+<div class="alert-banner" style="flex-wrap:wrap;gap:10px">
+  <div class="count">{{ low_stock|length }}</div>
+  <div>
+    <strong>⚠️ کالاهای رو به اتمام:</strong>
+    <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
+      {% for item in low_stock %}
+      <span style="background:rgba(227,116,0,0.1);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;color:var(--warning)">
+        {{ item.name }} ({{ item.stock }} {{ item.unit }})
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─── Today's Stats ─── -->
+<div class="summary">
+  <div class="box">
+    <div class="label">💰 درآمد امروز</div>
+    <div class="value">{{ "{:,}".format(today_total) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">👥 تعداد مشتری</div>
+    <div class="value">{{ today_customers }}</div>
+  </div>
+  <div class="box">
+    <div class="label">🛎️ تعداد خدمات</div>
+    <div class="value">{{ today_count }}</div>
+  </div>
+  <div class="box">
+    <div class="label">💸 کمیسیون کارمندان</div>
+    <div class="value orange">{{ "{:,}".format(today_commission) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+</div>
+
+<!-- ─── Monthly Summary ─── -->
+<div class="summary">
+  <div class="box">
+    <div class="label">📈 درآمد ماه</div>
+    <div class="value green">{{ "{:,}".format(month_total) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">💸 هزینه‌های ماه</div>
+    <div class="value red">{{ "{:,}".format(month_expenses) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">📊 سود خالص ماه</div>
+    <div class="value {% if month_profit >= 0 %}green{% else %}red{% endif %}">{{ "{:,}".format(month_profit) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+</div>
+
+<!-- ─── Charts ─── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+  <!-- Bar Chart: 7 Days Income vs Expenses -->
+  <div class="card">
+    <h2>📊 درآمد و هزینه — ۷ روز اخیر</h2>
+    <div style="position:relative;height:280px">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Pie Chart: Service Category Breakdown -->
+  <div class="card">
+    <h2>🍩 تفکیک خدمات بر اساس دسته‌بندی</h2>
+    <div style="position:relative;height:280px">
+      <canvas id="pieChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Chart Initialization ─── -->
+<script>
+// Bar Chart — Income vs Expenses (last 7 days)
+const barCtx = document.getElementById('barChart').getContext('2d');
+new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ chart_labels|safe }},
+    datasets: [
+      {
+        label: 'درآمد',
+        data: {{ chart_income|safe }},
+        backgroundColor: 'rgba(46,125,50,0.7)',
+        borderColor: '#2e7d32',
+        borderWidth: 1,
+        borderRadius: 4
+      },
+      {
+        label: 'هزینه',
+        data: {{ chart_expenses|safe }},
+        backgroundColor: 'rgba(217,48,37,0.7)',
+        borderColor: '#d93025',
+        borderWidth: 1,
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { font: { family: 'Vazirmatn', size: 12 }, padding: 16 }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { font: { family: 'Vazirmatn', size: 11 } }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'Vazirmatn', size: 11 } }
+      }
+    }
+  }
+});
+
+// Pie Chart — Service Category Breakdown
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+new Chart(pieCtx, {
+  type: 'pie',
+  data: {
+    labels: {{ cat_labels|safe }},
+    datasets: [{
+      data: {{ cat_values|safe }},
+      backgroundColor: [
+        '#d81b60', '#2e7d32', '#1a73e8', '#e37400',
+        '#9c27b0', '#00897b', '#c62828', '#5c6bc0',
+        '#f57c00', '#0288d1'
+      ],
+      borderWidth: 2,
+      borderColor: '#ffffff'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          font: { family: 'Vazirmatn', size: 12 },
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      }
+    }
+  }
+});
+</script>
+
+<!-- ─── Responsive grid fallback ─── -->
+<style>
+@media (max-width: 768px) {
+  div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+{% endblock %}

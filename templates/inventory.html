@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">📦 مدیریت انبار</h1>
+
+<!-- ─── Low Stock Alert Banner ─── -->
+{% if alerts %}
+<div class="alert-banner">
+  <span class="count">{{ alerts|length }}</span>
+  <span>⚠️ کالاهای با موجودی کم:</span>
+  <strong>{% for a in alerts %}{{ a.name }}{% if not loop.last %}، {% endif %}{% endfor %}</strong>
+</div>
+{% endif %}
+
+<!-- ─── Summary Boxes ─── -->
+<div class="summary">
+  <div class="box">
+    <div class="label">تعداد اقلام</div>
+    <div class="value">{{ inventory|length }}</div>
+  </div>
+  <div class="box">
+    <div class="label">ارزش کل موجودی</div>
+    <div class="value green">{{ "{:,}".format(total_value) }} تومان</div>
+  </div>
+  <div class="box">
+    <div class="label">اقلام کم‌موجودی</div>
+    <div class="value {{ 'red' if alerts else 'green' }}">{{ alerts|length }}</div>
+  </div>
+</div>
+
+<!-- ─── Add New Item Form ─── -->
+<div class="card">
+  <h2>➕ افزودن کالای جدید</h2>
+  <form method="POST">
+    <input type="hidden" name="action" value="add_item">
+    <div class="form-row">
+      <div class="field">
+        <label>نام کالا *</label>
+        <input name="name" required placeholder="مثلاً شامپو، رنگ مو...">
+      </div>
+      <div class="field" style="max-width:150px">
+        <label>واحد</label>
+        <select name="unit">
+          <option value="عدد">عدد</option>
+          <option value="بسته">بسته</option>
+          <option value="لیتر">لیتر</option>
+          <option value="کیلوگرم">کیلوگرم</option>
+          <option value="گرم">گرم</option>
+          <option value="میلی‌لیتر">میلی‌لیتر</option>
+          <option value="جعبه">جعبه</option>
+          <option value="رول">رول</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:130px">
+        <label>موجودی اولیه</label>
+        <input type="number" name="initial_stock" min="0" value="0">
+      </div>
+      <div class="field" style="max-width:130px">
+        <label>حداقل موجودی</label>
+        <input type="number" name="min_stock" min="0" value="0">
+      </div>
+      <div class="field" style="max-width:150px">
+        <label>قیمت واحد (تومان)</label>
+        <input type="number" name="unit_price" min="0" value="0">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button type="submit" class="btn btn-success">✅ افزودن</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Stock In / Stock Out Forms ─── -->
+<div style="display:flex;gap:20px;flex-wrap:wrap">
+  <!-- Stock In -->
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>📥 ورود کالا</h2>
+    <form method="POST">
+      <input type="hidden" name="action" value="stock_in">
+      <div class="form-row">
+        <div class="field">
+          <label>انتخاب کالا *</label>
+          <select name="item_name" required>
+            <option value="">— انتخاب کنید —</option>
+            {% for item in inventory %}
+            <option value="{{ item.name }}">{{ item.name }} (موجودی: {{ item.stock }} {{ item.unit }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field" style="max-width:120px">
+          <label>تعداد *</label>
+          <input type="number" name="qty" min="1" value="1" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>دلیل</label>
+          <input name="reason" placeholder="مثلاً خرید، برگشت از مشتری...">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-success">📥 ثبت ورود</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Stock Out -->
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>📤 خروج کالا</h2>
+    <form method="POST">
+      <input type="hidden" name="action" value="stock_out">
+      <div class="form-row">
+        <div class="field">
+          <label>انتخاب کالا *</label>
+          <select name="item_name" required>
+            <option value="">— انتخاب کنید —</option>
+            {% for item in inventory %}
+            <option value="{{ item.name }}" {% if item.stock <= 0 %}disabled{% endif %}>{{ item.name }} (موجودی: {{ item.stock }} {{ item.unit }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field" style="max-width:120px">
+          <label>تعداد *</label>
+          <input type="number" name="qty" min="1" value="1" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>دلیل</label>
+          <input name="reason" placeholder="مثلاً مصرف سالن، فروش...">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-warning">📤 ثبت خروج</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ─── Inventory Table ─── -->
+<div class="card">
+  <h2>📋 لیست موجودی انبار</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>نام کالا</th>
+        <th>واحد</th>
+        <th>موجودی</th>
+        <th>حداقل</th>
+        <th>قیمت واحد</th>
+        <th>ارزش</th>
+        <th>وضعیت</th>
+        <th>عملیات</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in inventory %}
+      <tr>
+        <td style="color:var(--text-muted);font-size:12px">{{ loop.index }}</td>
+        <td><strong>{{ item.name }}</strong></td>
+        <td>{{ item.unit }}</td>
+        <td style="font-weight:600;
+          {% if item.stock <= 0 %}color:var(--danger)
+          {% elif item.stock <= item.min_stock %}color:var(--warning)
+          {% else %}color:var(--success){% endif %}">
+          {{ item.stock }}
+        </td>
+        <td style="color:var(--text-muted)">{{ item.min_stock }}</td>
+        <td>{{ "{:,}".format(item.unit_price) }} تومان</td>
+        <td style="font-weight:600;color:var(--primary)">{{ "{:,}".format(item.stock * item.unit_price) }} تومان</td>
+        <td>
+          {% if item.stock <= 0 %}
+            <span style="background:var(--danger-bg);color:var(--danger);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">❌ تمام شده</span>
+          {% elif item.stock <= item.min_stock %}
+            <span style="background:var(--warning-bg);color:var(--warning);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">⚠️ کم‌موجودی</span>
+          {% else %}
+            <span style="background:var(--success-bg);color:var(--success);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">✅ موجود</span>
+          {% endif %}
+        </td>
+        <td style="white-space:nowrap">
+          <a href="/inventory/log/{{ item.name }}" class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px;text-decoration:none">📝 تاریخچه</a>
+          <form method="POST" style="display:inline" onsubmit="return confirm('آیا از حذف «{{ item.name }}» اطمینان دارید؟')">
+            <input type="hidden" name="action" value="delete_item">
+            <input type="hidden" name="item_name" value="{{ item.name }}">
+            <button class="btn btn-danger btn-sm" style="min-width:40px;min-height:36px">❌</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not inventory %}
+  <div class="empty">📦 انبار خالی است — کالای جدید اضافه کنید</div>
+  {% endif %}
+</div>
+
+{% endblock %}

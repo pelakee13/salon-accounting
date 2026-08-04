@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">💸 مدیریت هزینه‌ها</h1>
+
+<!-- ─── Date Filter ─── -->
+<div class="card">
+  <h2>🔍 فیلتر بر اساس تاریخ</h2>
+  <form method="GET" action="/expenses">
+    <div class="form-row">
+      <div class="field" style="max-width:200px">
+        <label>از تاریخ</label>
+        <input type="text" name="from" placeholder="۱۴۰۴/۰۵/۰۱" value="{{ start_date or '' }}" dir="ltr" style="text-align:center">
+      </div>
+      <div class="field" style="max-width:200px">
+        <label>تا تاریخ</label>
+        <input type="text" name="to" placeholder="۱۴۰۴/۰۵/۳۱" value="{{ end_date or '' }}" dir="ltr" style="text-align:center">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button type="submit" class="btn btn-primary">🔍 فیلتر</button>
+          {% if start_date or end_date %}
+          <a href="/expenses" class="btn btn-secondary">❌ پاک کردن فیلتر</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Add New Expense ─── -->
+<div class="card">
+  <h2>➕ ثبت هزینه جدید</h2>
+  <form method="POST" action="/expenses">
+    <input type="hidden" name="action" value="add">
+    <div class="form-row">
+      <div class="field" style="max-width:180px">
+        <label>📅 تاریخ *</label>
+        <input type="text" name="date" value="{{ today }}" required placeholder="۱۴۰۴/۰۵/۱۲" dir="ltr" style="text-align:center">
+      </div>
+      <div class="field" style="max-width:180px">
+        <label>🏷️ دسته‌بندی *</label>
+        <select name="category" required>
+          <option value="">— انتخاب دسته —</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="max-width:180px">
+        <label>💰 مبلغ (تومان) *</label>
+        <input type="number" name="amount" min="1" required placeholder="0" dir="ltr" style="text-align:center">
+      </div>
+      <div class="field">
+        <label>📝 شرح</label>
+        <input type="text" name="description" placeholder="توضیح هزینه">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field" style="max-width:180px">
+        <label>💳 روش پرداخت</label>
+        <select name="payment_method">
+          <option value="نقدی">💵 نقدی</option>
+          <option value="کارت">💳 کارت</option>
+          <option value="انتقال">🏦 انتقال بانکی</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>📌 یادداشت</label>
+        <input type="text" name="note" placeholder="یادداشت اختیاری">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button type="submit" class="btn btn-primary">✅ ثبت هزینه</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Summary ─── -->
+<div class="summary">
+  <div class="box">
+    <div class="label">💸 جمع کل هزینه‌ها</div>
+    <div class="value red">{{ "{:,}".format(total) }} <small style="font-size:12px">تومان</small></div>
+  </div>
+  {% for cat, amount in cat_totals.items() %}
+  <div class="box">
+    <div class="label">{{ cat }}</div>
+    <div class="value">{{ "{:,}".format(amount) }} <small style="font-size:12px">تومان</small></div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ─── Category Breakdown ─── -->
+{% if cat_totals %}
+<div class="card">
+  <h2>📊 خلاصه بر اساس دسته‌بندی</h2>
+  <table>
+    <thead>
+      <tr><th>دسته‌بندی</th><th>مبلغ (تومان)</th><th>درصد</th></tr>
+    </thead>
+    <tbody>
+    {% for cat, amount in cat_totals.items() %}
+    <tr>
+      <td><strong>{{ cat }}</strong></td>
+      <td style="font-weight:600;color:var(--primary)">{{ "{:,}".format(amount) }}</td>
+      <td>
+        {% if total > 0 %}
+        {{ "%.1f"|format(amount / total * 100) }}%
+        {% else %}
+        ۰٪
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="font-weight:700;background:var(--primary-50)">
+        <td>جمع کل</td>
+        <td style="color:var(--danger);font-weight:700">{{ "{:,}".format(total) }}</td>
+        <td>۱۰۰٪</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endif %}
+
+<!-- ─── Expenses Table ─── -->
+<div class="card">
+  <h2>📋 لیست هزینه‌ها {% if start_date or end_date %}<span style="font-weight:400;color:var(--text-muted);font-size:13px">(فیلتر شده)</span>{% endif %}</h2>
+  {% if expenses %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>📅 تاریخ</th>
+        <th>🏷️ دسته‌بندی</th>
+        <th>💰 مبلغ</th>
+        <th>📝 شرح</th>
+        <th>💳 پرداخت</th>
+        <th>📌 یادداشت</th>
+        <th>عملیات</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for e in expenses %}
+    <tr>
+      <td style="color:var(--text-muted);font-size:12px">{{ loop.index }}</td>
+      <td>{{ e.date }}</td>
+      <td><span style="background:var(--primary-light);color:var(--primary-dark);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500">{{ e.category }}</span></td>
+      <td style="font-weight:600;color:var(--danger)">{{ "{:,}".format(e.amount) }} تومان</td>
+      <td>{{ e.description or '—' }}</td>
+      <td>{{ e.payment_method }}</td>
+      <td style="color:var(--text-secondary);font-size:13px">{{ e.note or '—' }}</td>
+      <td>
+        <form method="POST" action="/expenses" style="display:inline" onsubmit="return confirm('آیا از حذف این هزینه اطمینان دارید؟')">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="idx" value="{{ loop.index0 }}">
+          <button type="submit" class="btn btn-danger btn-sm">🗑️ حذف</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    {% if start_date or end_date %}
+    هزینه‌ای در بازه زمانی مشخص شده یافت نشد
+    {% else %}
+    هنوز هزینه‌ای ثبت نشده
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

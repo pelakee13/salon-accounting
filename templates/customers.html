@@ -20,7 +20,7 @@
     <tbody>
     {% for c in customers %}
     <tr>
-      <td><strong>{{ c.name }}</strong></td>
+      <td><a href="/customer/{{ c.name }}" style="color:var(--primary);font-weight:600">{{ c.name }}</a></td>
       <td>{{ c.phone }}</td>
       <td>{{ c.specialty }}</td>
       <td>{{ c.join_date }}</td>

@@ -10,28 +10,83 @@
       </select>
     </div>
     <button type="submit" class="btn btn-primary btn-sm">🔄 نمایش</button>
-    {% if details %}<a href="/monthly/export/{{ month_str }}" class="btn btn-success btn-sm">📥 خروجی اکسل</a>{% endif %}
+    {% if details %}<a href="/monthly/export/{{ month_str.split('/')[0] }}/{{ month_str.split('/')[1] }}" class="btn btn-success btn-sm">📥 خروجی اکسل</a>{% endif %}
   </form>
 </div>
 
 {% if emp_totals %}
+
+<!-- Summary -->
 <div class="summary">
-  {% for name, data in emp_totals.items() %}
   <div class="box">
-    <div class="label">👤 {{ name }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin:4px 0">{{ data.count }} خدمت</div>
-    <div class="value green">{{ "{:,}".format(data.amount) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
-    {% if data.commission > 0 %}<div style="color:var(--warning);font-weight:500;font-size:13px;margin-top:6px">💸 {{ "{:,}".format(data.commission) }}</div>{% endif %}
+    <div class="label">💰 درآمد کل</div>
+    <div class="value green">{{ "{:,}".format(grand_total) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
   </div>
-  {% endfor %}
+  <div class="box">
+    <div class="label">💸 هزینه‌ها</div>
+    <div class="value orange">{{ "{:,}".format(total_expenses) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">📈 سود خالص</div>
+    <div class="value {% if profit >= 0 %}green{% else %}red{% endif %}">{{ "{:,}".format(profit) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">💸 پورسانت</div>
+    <div class="value orange">{{ "{:,}".format(grand_comm) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">💰 انعام</div>
+    <div class="value green">{{ "{:,}".format(grand_tips) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
 </div>
 
+<!-- Charts -->
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>📊 درآمد روزانه</h2>
+    <canvas id="dailyChart" height="200"></canvas>
+  </div>
+  {% if cat_labels %}
+  <div class="card" style="flex:1;min-width:250px;max-width:350px">
+    <h2>🛎️ درآمد بر اساس دسته</h2>
+    <canvas id="catChart" height="200"></canvas>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Per-Employee Details -->
+{% for emp_name, emp_txns in employee_transactions.items() %}
 <div class="card">
+  <h2 style="display:flex;justify-content:space-between;align-items:center">
+    <span>👤 {{ emp_name }}</span>
+    <span style="font-size:13px;color:var(--text-muted)">{{ emp_txns|length }} خدمت — {{ "{:,}".format(emp_txns|map(attribute='final_amount')|sum) }} تومان</span>
+  </h2>
+  <table>
+    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>مبلغ</th><th>پورسانت</th></tr></thead>
+    <tbody>
+    {% for t in emp_txns|sort(attribute='date', reverse=true) %}
+    <tr>
+      <td>{{ t.date }}</td>
+      <td>{{ t.customer }}</td>
+      <td><strong>{{ t.service }}</strong></td>
+      <td>{{ t.category or '—' }}</td>
+      <td style="font-weight:600">{{ "{:,}".format(t.final_amount or t.amount) }}</td>
+      <td style="color:var(--warning)">{{ "{:,}".format(t.commission) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+<!-- Summary Table -->
+<div class="card">
+  <h2>📋 جمع‌بندی تفکیکی</h2>
   <table>
     <thead><tr><th>کارمند</th><th>دسته خدمت</th><th>تعداد</th><th>جمع درآمد</th><th>پورسانت</th></tr></thead>
     <tbody>
     {% for d in details %}
-    <tr><td>{{ d.employee }}</td><td>{{ d.category }}</td><td>{{ d.count }}</td><td style="font-weight:600">{{ "{:,}".format(d.amount) }}</td><td>{{ "{:,}".format(d.commission) }}</td></tr>
+    <tr><td>{{ d.employee }}</td><td>{{ d.category or '—' }}</td><td>{{ d.count }}</td><td style="font-weight:600">{{ "{:,}".format(d.amount) }}</td><td>{{ "{:,}".format(d.commission) }}</td></tr>
     {% endfor %}
     {% if details %}
     <tr style="background:var(--primary);color:#fff;font-weight:600"><td>مجموع کل</td><td></td><td>{{ total_count }}</td><td>{{ "{:,}".format(grand_total) }}</td><td>{{ "{:,}".format(grand_comm) }}</td></tr>
@@ -39,6 +94,43 @@
     </tbody>
   </table>
 </div>
+
+<script>
+new Chart(document.getElementById('dailyChart'),{
+  type:'bar',
+  data:{
+    labels:{{ chart_labels|safe }},
+    datasets:[{
+      label:'درآمد (تومان)',
+      data:{{ chart_income|safe }},
+      backgroundColor:'rgba(46,125,50,0.7)',
+      borderColor:'#2e7d32',
+      borderWidth:1,
+      borderRadius:4
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{beginAtZero:true,ticks:{font:{family:'Vazirmatn',size:10},callback:v=>v.toLocaleString()}},
+      x:{ticks:{font:{family:'Vazirmatn',size:10}}}
+    }
+  }
+});
+
+{% if cat_labels %}
+new Chart(document.getElementById('catChart'),{
+  type:'doughnut',
+  data:{
+    labels:{{ cat_labels|safe }},
+    datasets:[{data:{{ cat_values|safe }},backgroundColor:['#d81b60','#43a047','#1a73e8','#e37400','#9c27b0','#00bcd4','#ff5722']}]
+  },
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Vazirmatn',size:11}}}}}
+});
+{% endif %}
+</script>
+
 {% else %}
 <div class="card" style="text-align:center;padding:60px 20px">
   <div style="font-size:48px;margin-bottom:16px">📭</div>

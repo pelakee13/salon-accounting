@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+{% if customer %}
+<h1 class="page-title">👤 تاریخچه {{ customer.name }}</h1>
+
+<!-- Customer Info -->
+<div class="card">
+  <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:start">
+    <div style="flex:1;min-width:200px">
+      <h2>اطلاعات مشتری</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div><span style="color:var(--text-muted);font-size:12px">نام</span><br><strong>{{ customer.name }}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px">تلفن</span><br><strong>{{ customer.phone or '—' }}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px">تخصص</span><br><strong>{{ customer.specialty or '—' }}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px">تاریخ عضویت</span><br><strong>{{ customer.join_date }}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px">تعداد مراجعه</span><br><strong>{{ customer.visit_count }}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px">امتیاز</span><br><strong style="color:var(--primary)">{{ customer.points }}</strong></div>
+      </div>
+      {% if customer.note %}
+      <div style="margin-top:12px;padding:10px;background:var(--surface-alt);border-radius:8px;font-size:13px">
+        📝 {{ customer.note }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary">
+  <div class="box">
+    <div class="label">💰 مبلغ کل پرداختی</div>
+    <div class="value green">{{ "{:,}".format(total_spent) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">🛎️ تعداد خدمات</div>
+    <div class="value">{{ transactions|length }}</div>
+  </div>
+  <div class="box">
+    <div class="label">💸 پورسانت کل</div>
+    <div class="value orange">{{ "{:,}".format(total_commission) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+</div>
+
+<!-- Services Used -->
+{% if services_used %}
+<div class="card">
+  <h2>🛎️ خدمات استفاده شده</h2>
+  <table>
+    <thead><tr><th>خدمت</th><th>تعداد</th><th>جمع مبلغ</th></tr></thead>
+    <tbody>
+    {% for svc, data in services_used.items() %}
+    <tr>
+      <td><strong>{{ svc }}</strong></td>
+      <td>{{ data.count }}</td>
+      <td style="font-weight:600;color:var(--primary)">{{ "{:,}".format(data.total) }} تومان</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Transaction History -->
+<div class="card">
+  <h2>📋 تاریخچه تراکنش‌ها</h2>
+  <table>
+    <thead><tr><th>تاریخ</th><th>خدمت</th><th>کارمند</th><th>مبلغ</th><th>پورسانت</th><th>روش پرداخت</th></tr></thead>
+    <tbody>
+    {% for t in transactions %}
+    <tr>
+      <td>{{ t.date }}</td>
+      <td><strong>{{ t.service }}</strong></td>
+      <td>{{ t.employee }}</td>
+      <td style="font-weight:600;color:var(--primary)">{{ "{:,}".format(t.final_amount or t.amount) }}</td>
+      <td>{{ "{:,}".format(t.commission) }}</td>
+      <td>{{ t.payment_method }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if not transactions %}<div class="empty">تراکنشی برای این مشتری ثبت نشده</div>{% endif %}
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:60px 20px">
+  <div style="font-size:48px;margin-bottom:16px">🔍</div>
+  <div style="font-size:16px;color:var(--text-secondary);font-weight:500">مشتری یافت نشد</div>
+  <div style="margin-top:16px"><a href="/customers" class="btn btn-primary">📒 بازگشت به لیست مشتریان</a></div>
+</div>
+{% endif %}
+{% endblock %}

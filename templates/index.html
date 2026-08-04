@@ -184,14 +184,20 @@
       </div>
     </div>
 
-    <!-- SMS & Points -->
-    <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <!-- SMS, Points & Tip -->
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-top:14px">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
         <input type="checkbox" name="send_sms" id="send_sms"> 📱 ارسال پیامک فاکتور
       </label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
         <input type="checkbox" name="use_points" id="use_points" onchange="updateTotals()"> 🎯 استفاده از امتیازات
       </label>
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+        <span>💰 انعام (تومان):</span>
+        <input type="number" name="tip" id="tip_input" min="0" value="0" placeholder="0"
+               style="max-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      </div>
     </div>
   </div>
 </div>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">📋 تاریخچه {{ item_name }}</h1>
+
+<div style="margin-bottom:16px">
+  <a href="/inventory" class="btn btn-secondary btn-sm">📦 بازگشت به انبار</a>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>تاریخ</th><th>نوع</th><th>تعداد</th><th>علت/توضیح</th><th>لینک خدمت</th></tr></thead>
+    <tbody>
+    {% for log in logs %}
+    <tr>
+      <td>{{ log.date }}</td>
+      <td>
+        {% if log.type == 'ورود' %}
+          <span style="color:var(--success);font-weight:600">📥 ورود</span>
+        {% else %}
+          <span style="color:var(--danger);font-weight:600">📤 خروج</span>
+        {% endif %}
+      </td>
+      <td style="font-weight:600">{{ log.qty }}</td>
+      <td>{{ log.reason or '—' }}</td>
+      <td>{{ log.service_link or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if not logs %}<div class="empty">تاریخچه‌ای برای این ماده وجود ندارد</div>{% endif %}
+</div>
+{% endblock %}

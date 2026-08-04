@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">📈 {{ title }}</h1>
+
+<!-- Period Selector -->
+<div class="card">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+    <div class="field" style="max-width:140px">
+      <label>بازه زمانی</label>
+      <select name="period" onchange="toggleCustomDates()">
+        <option value="today" {% if period=='today' %}selected{% endif %}>امروز</option>
+        <option value="month" {% if period=='month' %}selected{% endif %}>این ماه</option>
+        <option value="year" {% if period=='year' %}selected{% endif %}>این سال</option>
+        <option value="custom" {% if period=='custom' %}selected{% endif %}>بازه دلخواه</option>
+      </select>
+    </div>
+    <div class="field" style="max-width:160px;display:{% if period=='custom' %}block{% else %}none{% endif %}" id="from_field">
+      <label>از تاریخ</label>
+      <input name="from" value="{{ start_date }}" placeholder="1404/01/01">
+    </div>
+    <div class="field" style="max-width:160px;display:{% if period=='custom' %}block{% else %}none{% endif %}" id="to_field">
+      <label>تا تاریخ</label>
+      <input name="to" value="{{ end_date }}" placeholder="1404/01/31">
+    </div>
+    <button type="submit" class="btn btn-primary">🔄 نمایش</button>
+  </form>
+</div>
+
+<!-- Summary -->
+<div class="summary">
+  <div class="box">
+    <div class="label">💰 درآمد کل</div>
+    <div class="value green">{{ "{:,}".format(total_income) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">💸 هزینه‌ها</div>
+    <div class="value orange">{{ "{:,}".format(total_expenses) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">📈 سود خالص</div>
+    <div class="value {% if net_profit >= 0 %}green{% else %}red{% endif %}">{{ "{:,}".format(net_profit) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="box">
+    <div class="label">💸 پورسانت کارمندان</div>
+    <div class="value orange">{{ "{:,}".format(total_commission) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">💰 انعام</div>
+    <div class="value green">{{ "{:,}".format(total_tips) }} <small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">📊 تعداد تراکنش</div>
+    <div class="value">{{ txn_count }}</div>
+  </div>
+  <div class="box">
+    <div class="label">📝 تعداد هزینه</div>
+    <div class="value">{{ expense_count }}</div>
+  </div>
+</div>
+
+<!-- Charts -->
+{% if income_cats or expense_cats %}
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+  {% if income_cats %}
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>💰 درآمد بر اساس دسته خدمت</h2>
+    <canvas id="incomeChart" height="250"></canvas>
+  </div>
+  {% endif %}
+  {% if expense_cats %}
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>💸 هزینه‌ها بر اساس دسته</h2>
+    <canvas id="expenseChart" height="250"></canvas>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Category Breakdown Tables -->
+{% if income_cats or expense_cats %}
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+  {% if income_cats %}
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>💰 درآمد بر اساس دسته خدمت</h2>
+    <table>
+      <thead><tr><th>دسته</th><th>مبلغ</th><th>درصد</th></tr></thead>
+      <tbody>
+      {% for cat, amount in income_cats.items() %}
+      <tr>
+        <td><strong>{{ cat }}</strong></td>
+        <td style="font-weight:600;color:var(--success)">{{ "{:,}".format(amount) }} تومان</td>
+        <td>{{ "%.1f"|format(amount / total_income * 100 if total_income > 0 else 0) }}%</td>
+      </tr>
+      {% endfor %}
+      <tr style="background:var(--success);color:#fff;font-weight:600">
+        <td>مجموع</td><td>{{ "{:,}".format(total_income) }} تومان</td><td>100%</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if expense_cats %}
+  <div class="card" style="flex:1;min-width:300px">
+    <h2>💸 هزینه‌ها بر اساس دسته</h2>
+    <table>
+      <thead><tr><th>دسته</th><th>مبلغ</th><th>درصد</th></tr></thead>
+      <tbody>
+      {% for cat, amount in expense_cats.items() %}
+      <tr>
+        <td><strong>{{ cat }}</strong></td>
+        <td style="font-weight:600;color:var(--danger)">{{ "{:,}".format(amount) }} تومان</td>
+        <td>{{ "%.1f"|format(amount / total_expenses * 100 if total_expenses > 0 else 0) }}%</td>
+      </tr>
+      {% endfor %}
+      <tr style="background:var(--danger);color:#fff;font-weight:600">
+        <td>مجموع</td><td>{{ "{:,}".format(total_expenses) }} تومان</td><td>100%</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+function toggleCustomDates(){
+  let p = document.querySelector('[name="period"]').value;
+  document.getElementById('from_field').style.display = p==='custom'?'block':'none';
+  document.getElementById('to_field').style.display = p==='custom'?'block':'none';
+}
+
+{% if income_cats %}
+new Chart(document.getElementById('incomeChart'),{
+  type:'doughnut',
+  data:{labels:{{ income_cats.keys()|list|tojson }},datasets:[{data:{{ income_cats.values()|list|tojson }},backgroundColor:['#43a047','#66bb6a','#81c784','#a5d6a7','#c8e6c9','#1b5e20']}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Vazirmatn',size:12}}}}}
+});
+{% endif %}
+
+{% if expense_cats %}
+new Chart(document.getElementById('expenseChart'),{
+  type:'doughnut',
+  data:{labels:{{ expense_cats.keys()|list|tojson }},datasets:[{data:{{ expense_cats.values()|list|tojson }},backgroundColor:['#d93025','#e57373','#ef9a9a','#ffcdd2','#ff8a80','#c62828']}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Vazirmatn',size:12}}}}}
+});
+{% endif %}
+</script>
+{% endblock %}

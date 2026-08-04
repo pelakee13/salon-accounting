@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>هلیا بیوتی</title>
+<title>آکادمی هلیا قدیمی</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
   --primary: #d81b60;
@@ -60,7 +61,7 @@ a:hover{color:var(--primary-dark)}
 /* ─── Navigation ─── */
 .nav{
   background:var(--surface);
-  padding:0 28px;
+  padding:0 20px;
   display:flex;
   flex-wrap:wrap;
   gap:0;
@@ -71,8 +72,8 @@ a:hover{color:var(--primary-dark)}
   box-shadow:var(--shadow-xs);
 }
 .nav a{
-  padding:16px 20px;
-  font-size:13px;
+  padding:14px 14px;
+  font-size:12px;
   font-weight:500;
   color:var(--text-secondary);
   transition:var(--transition);
@@ -82,6 +83,7 @@ a:hover{color:var(--primary-dark)}
 }
 .nav a:hover{color:var(--primary);background:var(--primary-50)}
 .nav a.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.nav .nav-separator{width:1px;background:var(--border);margin:8px 2px}
 
 /* ─── Container ─── */
 .container{max-width:1120px;margin:0 auto;padding:28px 24px}
@@ -95,7 +97,7 @@ a:hover{color:var(--primary-dark)}
   letter-spacing:-0.02em;
 }
 
-/* ─── Cards (Match image style - pink gradient) ─── */
+/* ─── Cards ─── */
 .card{
   background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);
   border-radius:var(--radius-lg);
@@ -105,9 +107,7 @@ a:hover{color:var(--primary-dark)}
   box-shadow:0 2px 12px rgba(0,0,0,0.08);
   transition:var(--transition);
 }
-.card:hover{
-  box-shadow:0 4px 16px rgba(0,0,0,0.1);
-}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.1)}
 .card h2{
   color:var(--text);
   margin-bottom:18px;
@@ -136,6 +136,7 @@ a:hover{color:var(--primary-dark)}
 .summary .box .value{font-size:26px;font-weight:700;color:var(--primary);letter-spacing:-0.02em}
 .summary .box .value.green{color:var(--success)}
 .summary .box .value.orange{color:var(--warning)}
+.summary .box .value.red{color:var(--danger)}
 
 /* ─── Tables ─── */
 table{width:100%;border-collapse:collapse;background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
@@ -148,7 +149,6 @@ th{
   text-align:right;
   border-bottom:1px solid var(--border);
   letter-spacing:0.02em;
-  text-transform:uppercase;
 }
 td{
   padding:12px 16px;
@@ -184,7 +184,7 @@ input:focus,select:focus,textarea:focus{
 }
 input::placeholder{color:var(--text-muted);font-weight:300}
 
-/* ─── Buttons (Match image style) ─── */
+/* ─── Buttons ─── */
 .btn{
   display:inline-flex;
   align-items:center;
@@ -203,24 +203,17 @@ input::placeholder{color:var(--text-muted);font-weight:300}
 }
 .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
 .btn:active{transform:translateY(0)}
-
-/* Primary = Dark Green (matches image submit button) */
 .btn-primary{background:#43a047;color:#fff}
 .btn-primary:hover{background:#388e3c}
-
-/* Success = Green */
 .btn-success{background:var(--success);color:#fff}
 .btn-success:hover{background:#1b5e20}
-
-/* Danger */
 .btn-danger{background:var(--danger);color:#fff}
 .btn-danger:hover{background:#c5221f}
-
-/* Secondary (matches image cancel button) */
 .btn-secondary{background:transparent;color:#666;border:1px solid #e0e0e0}
 .btn-secondary:hover{background:#f5f5f5;border-color:#ccc}
-
 .btn-sm{padding:6px 12px;font-size:12px}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-warning:hover{background:#c55c00}
 
 /* ─── Form Layout ─── */
 .form-row{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
@@ -278,24 +271,40 @@ input::placeholder{color:var(--text-muted);font-weight:300}
 .modal-content input,.modal-content select{margin-bottom:12px}
 .modal-actions{display:flex;gap:10px;margin-top:18px}
 
-/* ─── Payment Options ─── */
-.payment-option{
-  display:flex;align-items:center;gap:6px;padding:12px 14px;
-  background:linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);border:1.5px solid rgba(216,27,96,0.1);border-radius:var(--radius);
-  cursor:pointer;transition:var(--transition);text-align:center;justify-content:center
+/* ─── Alert Banner ─── */
+.alert-banner{
+  background:linear-gradient(135deg,#fff8e1,#fff3cd);
+  border:1px solid #ffc107;
+  border-radius:var(--radius);
+  padding:12px 16px;
+  margin-bottom:16px;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
-.payment-option:has(input:checked){border-color:var(--primary);background:var(--primary-light)}
-.payment-option:hover{border-color:var(--primary)}
-.payment-label{font-size:13px;font-weight:500}
+.alert-banner .count{
+  background:var(--warning);
+  color:#fff;
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:700;
+}
 
 /* ─── Responsive ─── */
 @media(max-width:768px){
   .summary .box{min-width:100%}
   .form-row{flex-direction:column}
-  .nav{gap:0;padding:0 16px}
-  .nav a{font-size:12px;padding:14px 12px}
-  .container{padding:20px 16px}
-  .card{padding:20px}
+  .nav{gap:0;padding:0 8px}
+  .nav a{font-size:11px;padding:12px 8px}
+  .nav .nav-separator{display:none}
+  .container{padding:20px 12px}
+  .card{padding:18px}
   .page-title{font-size:20px}
 }
 </style>
@@ -304,12 +313,17 @@ input::placeholder{color:var(--text-muted);font-weight:300}
 <nav class="nav">
   <a href="/customers">📒 مشتریان</a>
   <a href="/">💰 ثبت خدمات</a>
+  <a href="/dashboard">🏠 داشبورد</a>
   <a href="/reports">📊 گزارش امروز</a>
-  <a href="/monthly">📅 گزارش ماهانه</a>
-  <a href="/backup">📦 بکاپ</a>
+  <a href="/monthly">📅 ماهانه</a>
+  <a href="/expenses">💸 هزینه‌ها</a>
+  <a href="/profit_loss">📈 سود و زیان</a>
+  <div class="nav-separator"></div>
+  <a href="/inventory">📦 انبار</a>
   <a href="/employees">👥 کارمندان</a>
   <a href="/services">🛎️ خدمات</a>
-  <a href="/logout" style="margin-right:auto;color:var(--danger)">🚪 خروج</a>
+  <div class="nav-separator"></div>
+  <a href="/backup">📦 بکاپ</a>
 </nav>
 <div class="container">
   {% with messages = get_flashed_messages(with_categories=true) %}
