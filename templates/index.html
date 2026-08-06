@@ -2,28 +2,46 @@
 {% block content %}
 <h1 class="page-title">هلیا بیوتی — {{ today }}</h1>
 
-<form method="POST" action="/submit_transaction" id="invoiceForm">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+  {% for cat, msg in messages %}
+    <div class="flash {{ cat }}">{{ msg }}</div>
+    {% if session.get('last_invoice') %}
+      <div style="margin:-8px 0 16px;display:flex;gap:10px;flex-wrap:wrap">
+        <a href="/invoice/{{ session['last_invoice'] }}" target="_blank" class="btn btn-primary btn-sm">🖨️ مشاهده فاکتور</a>
+        <a href="/invoice/pdf/{{ session['last_invoice'] }}" class="btn btn-secondary btn-sm">⬇️ دانلود PDF</a>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% endwith %}
+
+<form method="POST" action="/submit_transaction" id="invoiceForm" onsubmit="return validateInvoice()">
 
 <!-- ─── Customer Section ─── -->
 <div class="card">
   <h2>👤 اطلاعات مشتری</h2>
   <div class="form-row">
-    <div class="field">
-      <label>نام مشتری *</label>
-      <select name="customer_name" id="customer_select" required onchange="fillCustomerPhone()">
-        <option value="">— انتخاب مشتری —</option>
-      </select>
-      <input name="customer_name_manual" id="customer_name_manual" placeholder="یا نام جدید را تایپ کنید" style="margin-top:6px;display:none" oninput="document.getElementById('customer_select').value=''">
+    <div class="field" style="flex:2;min-width:200px">
+      <label>جستجوی مشتری (نام یا شماره تلفن)</label>
+      <input type="text" id="customer_search" placeholder="🔍 جستجو (نام یا تلفن)..." oninput="searchCustomer(this.value)" onfocus="searchCustomer(this.value)" autocomplete="off">
+      <div id="search_results" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:#fff"></div>
     </div>
     <div class="field" style="max-width:200px">
       <label>📱 تلفن</label>
-      <input name="customer_phone" id="customer_phone" placeholder="09123456789" pattern="^09\d{9}$" maxlength="11" title="شماره موبایل معتبر (11 رقمی با 09)" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <input name="customer_phone" id="customer_phone" placeholder="09123456789" pattern="^09\d{9}$" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
     </div>
     <div class="field" style="max-width:120px">
       <label>🎯 امتیاز</label>
       <input type="text" id="customer_points" readonly style="background:#f5f5f5;font-weight:600;color:var(--primary)" value="0">
     </div>
+    <div class="field" style="max-width:130px">
+      <label>&nbsp;</label>
+      <button type="button" class="btn btn-secondary" style="width:100%" onclick="openCustModal()">➕ مشتری جدید</button>
+    </div>
   </div>
+  <!-- hidden selected customer name -->
+  <input type="hidden" name="customer_name" id="customer_name_hidden">
 </div>
 
 <!-- ─── Services Section ─── -->
@@ -210,6 +228,7 @@
       <div style="font-size:13px;color:var(--text-secondary)">جمع خالص: <strong id="subtotal_display">۰</strong> تومان</div>
       <div id="discount_line" style="font-size:13px;color:var(--danger);display:none">تخفیف: <strong id="discount_line_val">۰</strong> تومان</div>
       <div id="points_line" style="font-size:13px;color:var(--warning);display:none">امتیاز استفاده شده: <strong id="points_line_val">۰</strong></div>
+      <div style="font-size:13px;color:var(--success);margin-top:4px">جمع کمیسیون کارمندان: <strong id="total_comm_display">۰</strong> تومان</div>
     </div>
     <div style="text-align:left">
       <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">مبلغ نهایی</div>
@@ -243,38 +262,73 @@ let customerPoints = 0;
 // Load customers
 fetch('/api/customers').then(r=>r.json()).then(data=>{
   customersData = data;
-  let sel = document.getElementById('customer_select');
-  data.forEach(c=>{
-    let opt = document.createElement('option');
-    opt.value = c.name;
-    opt.textContent = c.name + (c.phone ? ' (' + c.phone + ')' : '');
-    sel.appendChild(opt);
-  });
 });
 
-function fillCustomerPhone(){
-  let sel = document.getElementById('customer_select');
-  let phoneInput = document.getElementById('customer_phone');
-  let manualInput = document.getElementById('customer_name_manual');
-  let pointsInput = document.getElementById('customer_points');
-  if(sel.value){
-    let cust = customersData.find(c=>c.name===sel.value);
-    if(cust){
-      phoneInput.value = cust.phone || '';
-      customerPoints = cust.points || 0;
-      pointsInput.value = customerPoints.toLocaleString();
-    }
-    manualInput.style.display = 'none';
-    phoneInput.readOnly = true;
-    phoneInput.style.opacity = '0.6';
+// ─── Customer search (AJAX-like, client side filter) ───
+function searchCustomer(q){
+  q = (q||'').trim();
+  const box = document.getElementById('search_results');
+  // Show all customers if query empty (on focus)
+  let matches;
+  if(!q){
+    matches = customersData.slice(0, 10);
   } else {
-    manualInput.style.display = 'block';
-    phoneInput.value = '';
-    phoneInput.readOnly = false;
-    phoneInput.style.opacity = '1';
-    customerPoints = 0;
-    pointsInput.value = '0';
+    matches = customersData.filter(c =>
+      (c.name && c.name.includes(q)) || (c.phone && c.phone.includes(q))
+    ).slice(0, 10);
   }
+  if(!matches.length){ box.style.display='none'; return; }
+  box.innerHTML = matches.map(c =>
+    `<div onclick="selectCustomer('${encodeURIComponent(c.name)}','${c.phone||''}',${c.points||0})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background='#fff'">
+      <strong>${c.name}</strong> ${c.phone?`<span style='color:var(--text-muted);font-size:11px'>(${c.phone})</span>`:''}
+    </div>`
+  ).join('');
+  box.style.display='block';
+}
+
+function selectCustomer(name, phone, points){
+  name = decodeURIComponent(name);
+  document.getElementById('customer_search').value = name;
+  document.getElementById('customer_name_hidden').value = name;
+  document.getElementById('customer_phone').value = phone || '';
+  customerPoints = points || 0;
+  document.getElementById('customer_points').value = customerPoints.toLocaleString();
+  document.getElementById('search_results').style.display = 'none';
+}
+
+// ─── New customer modal ───
+function openCustModal(){
+  document.getElementById('nc_name').value='';
+  document.getElementById('nc_phone').value='';
+  document.getElementById('modal_overlay_cust').style.display='flex';
+  document.getElementById('nc_name').focus();
+}
+function closeCustModal(){
+  document.getElementById('modal_overlay_cust').style.display='none';
+}
+function saveNewCustomer(){
+  const name = document.getElementById('nc_name').value.trim();
+  const phone = document.getElementById('nc_phone').value.trim();
+  const specialty = document.getElementById('nc_specialty').value;
+  const birth_date = document.getElementById('nc_birth').value.trim();
+  const note = document.getElementById('nc_note').value.trim();
+  if(!name){ alert('نام مشتری الزامی است'); return; }
+  fetch('/api/customers/add', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({name, phone, specialty, birth_date, note})
+  }).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      customersData.push({name, phone, specialty, birth_date, note, points:0});
+      selectCustomer(encodeURIComponent(name), phone, 0);
+      closeCustModal();
+      flashMsg('مشتری جدید ثبت شد: '+name, 'success');
+    } else { alert(d.error||'خطا در ثبت'); }
+  });
+}
+
+function flashMsg(msg, cat){
+  // lightweight client flash via console; server flash shows after submit
+  console.log(cat+': '+msg);
 }
 
 function fillPrice(){
@@ -335,6 +389,11 @@ function renderItems(){
   document.getElementById('count_display').textContent = items.length;
   emptyMsg.style.display = items.length ? 'none' : 'block';
   document.getElementById('items_table').style.display = items.length ? 'table' : 'none';
+  // also persist selected customer name
+  const searchVal = document.getElementById('customer_search').value.trim();
+  if(searchVal && !document.getElementById('customer_name_hidden').value){
+    document.getElementById('customer_name_hidden').value = searchVal;
+  }
 }
 
 function toggleFinance(){
@@ -351,6 +410,7 @@ function toggleFinance(){
 
 function updateTotals(){
   let subtotal = items.reduce((sum,it) => sum + it.amount, 0);
+  let totalComm = items.reduce((sum,it) => sum + it.commission, 0);
   let discountType = document.getElementById('discount_type').value;
   let discountVal = parseInt(document.getElementById('discount_value').value) || 0;
   let discountAmount = discountType === 'percent' ? Math.round(subtotal * discountVal / 100) : discountVal;
@@ -365,6 +425,7 @@ function updateTotals(){
   }
   
   document.getElementById('subtotal_display').textContent = subtotal.toLocaleString();
+  document.getElementById('total_comm_display').textContent = totalComm.toLocaleString();
   document.getElementById('discount_display').textContent = discountAmount.toLocaleString() + ' تومان';
   document.getElementById('discount_line').style.display = discountAmount > 0 ? 'block' : 'none';
   document.getElementById('discount_line_val').textContent = discountAmount.toLocaleString();
@@ -372,7 +433,6 @@ function updateTotals(){
   document.getElementById('points_line_val').textContent = pointsUsed;
   document.getElementById('final_amount_display').innerHTML = finalAmount.toLocaleString() + ' <small style="font-size:14px;font-weight:400">تومان</small>';
   
-  // Update payment balance when totals change
   updatePaymentBalance();
 }
 
@@ -401,12 +461,8 @@ function togglePaymentMethod(method) {
 }
 
 function formatPaymentInput(input) {
-  // Remove non-digits
   let value = input.value.replace(/[^\d]/g, '');
-  // Format with commas
-  if (value) {
-    input.value = parseInt(value).toLocaleString('en-US');
-  }
+  if (value) input.value = parseInt(value).toLocaleString('en-US');
 }
 
 function updatePaymentBalance() {
@@ -419,10 +475,8 @@ function updatePaymentBalance() {
   const balanceStatus = document.getElementById('balance_status');
   const submitBtn = document.querySelector('button[type="submit"]');
   
-  // Update total display
   paymentTotalEl.textContent = finalAmount.toLocaleString();
   
-  // Calculate paid amounts
   const cash = parseInt(document.getElementById('pay_cash').value.replace(/[^\d]/g, '')) || 0;
   const card = parseInt(document.getElementById('pay_card').value.replace(/[^\d]/g, '')) || 0;
   const transfer = parseInt(document.getElementById('pay_transfer').value.replace(/[^\d]/g, '')) || 0;
@@ -431,7 +485,6 @@ function updatePaymentBalance() {
   const totalPaid = cash + card + transfer + credit;
   const remaining = finalAmount - totalPaid;
   
-  // Show balance status if any payment method is checked
   const anyChecked = document.getElementById('pay_cash_check').checked || 
                      document.getElementById('pay_card_check').checked || 
                      document.getElementById('pay_transfer_check').checked || 
@@ -439,56 +492,41 @@ function updatePaymentBalance() {
   
   balanceStatus.style.display = anyChecked ? 'block' : 'none';
   
-  // Update displays
   paidTotalEl.textContent = totalPaid.toLocaleString();
   paidTotalEl.style.color = totalPaid >= finalAmount ? 'var(--success)' : 'var(--warning)';
   
   remainingEl.textContent = remaining.toLocaleString();
   remainingEl.style.color = remaining > 0 ? 'var(--danger)' : 'var(--success)';
   
-  // Update progress bar
   const progress = finalAmount > 0 ? Math.min((totalPaid / finalAmount) * 100, 100) : 0;
   balanceBar.style.width = progress + '%';
   balanceBar.style.background = progress >= 100 ? 'var(--success)' : progress > 0 ? 'var(--warning)' : '#e0e0e0';
   
-  // Validation
   balanceWarning.style.display = 'block';
   if (totalPaid === 0 && anyChecked) {
     balanceWarning.innerHTML = '<span style="color:var(--warning)">⚠️ مبلغی وارد نشده</span>';
     balanceStatus.style.background = '#fff8e1';
-    submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.5';
-    submitBtn.style.cursor = 'not-allowed';
+    submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
   } else if (remaining > 0 && credit === 0) {
     balanceWarning.innerHTML = `<span style="color:var(--danger)">⚠️ مبلغ باقیمانده: ${remaining.toLocaleString()} تومان</span>`;
     balanceStatus.style.background = '#fce4ec';
-    submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.5';
-    submitBtn.style.cursor = 'not-allowed';
+    submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
   } else if (remaining < 0) {
     balanceWarning.innerHTML = `<span style="color:var(--danger)">❌ مبلغ پرداختی بیشتر از فاکتور است (${Math.abs(remaining).toLocaleString()} تومان مازاد)</span>`;
     balanceStatus.style.background = '#fce4ec';
-    submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.5';
-    submitBtn.style.cursor = 'not-allowed';
+    submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
   } else if (remaining > 0 && credit > 0) {
     balanceWarning.innerHTML = `<span style="color:var(--warning)">📝 نسیه: ${remaining.toLocaleString()} تومان باقیمانده</span>`;
     balanceStatus.style.background = '#fff8e1';
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '1';
-    submitBtn.style.cursor = 'pointer';
+    submitBtn.disabled = false; submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
   } else if (remaining === 0 && totalPaid > 0) {
     balanceWarning.innerHTML = '<span style="color:var(--success)">✅ مبلغ کامل پرداخت شده</span>';
     balanceStatus.style.background = '#e8f5e9';
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '1';
-    submitBtn.style.cursor = 'pointer';
+    submitBtn.disabled = false; submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
   } else {
     balanceWarning.style.display = 'none';
     balanceStatus.style.background = '#f5f5f5';
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '1';
-    submitBtn.style.cursor = 'pointer';
+    submitBtn.disabled = false; submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
   }
 }
 
@@ -503,40 +541,80 @@ function calculateFinalAmount(){
 function clearAll(){
   items = [];
   renderItems();
-  document.getElementById('count_display').textContent = '۰';
+  document.getElementById('customer_search').value='';
+  document.getElementById('customer_name_hidden').value='';
+  document.getElementById('customer_phone').value='';
+  document.getElementById('customer_points').value='0';
+  customerPoints=0;
   document.getElementById('subtotal_display').textContent = '۰';
+  document.getElementById('total_comm_display').textContent = '۰';
   document.getElementById('discount_value').value = '0';
   document.getElementById('discount_display').textContent = '۰ تومان';
   document.getElementById('discount_line').style.display = 'none';
   document.getElementById('points_line').style.display = 'none';
   document.getElementById('final_amount_display').innerHTML = '۰ <small style="font-size:14px;font-weight:400">تومان</small>';
   
-  // Reset payment inputs
   ['cash', 'card', 'transfer', 'credit'].forEach(method => {
     const check = document.getElementById(`pay_${method}_check`);
     const input = document.getElementById(`pay_${method}`);
     const row = check.closest('.payment-row');
-    check.checked = false;
-    input.disabled = true;
-    input.value = '';
-    input.style.background = '#f9f9f9';
-    input.style.borderColor = 'var(--border)';
-    row.style.borderColor = 'var(--border)';
-    row.style.boxShadow = 'none';
+    check.checked = false; input.disabled = true; input.value = '';
+    input.style.background = '#f9f9f9'; input.style.borderColor = 'var(--border)';
+    row.style.borderColor = 'var(--border)'; row.style.boxShadow = 'none';
   });
   
-  // Reset balance display
   document.getElementById('balance_status').style.display = 'none';
   document.getElementById('balance_warning').style.display = 'none';
   document.getElementById('balance_bar').style.width = '0%';
   
-  // Re-enable submit button
   const submitBtn = document.querySelector('button[type="submit"]');
-  submitBtn.disabled = false;
-  submitBtn.style.opacity = '1';
-  submitBtn.style.cursor = 'pointer';
+  submitBtn.disabled = false; submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+}
+
+function validateInvoice(){
+  // Ensure customer name is set
+  const searchVal = document.getElementById('customer_search').value.trim();
+  const hiddenVal = document.getElementById('customer_name_hidden').value.trim();
+  if(!hiddenVal && searchVal){
+    document.getElementById('customer_name_hidden').value = searchVal;
+  }
+  const finalName = document.getElementById('customer_name_hidden').value.trim();
+  if(!finalName){
+    alert('لطفاً نام مشتری را انتخاب یا تایپ کنید');
+    document.getElementById('customer_search').focus();
+    return false;
+  }
+  if(items.length === 0){
+    alert('حداقل یک خدمت اضافه کنید');
+    return false;
+  }
+  return true;
 }
 
 fillPrice();
 </script>
+
+<!-- ─── New Customer Modal ─── -->
+<div id="modal_overlay_cust" class="modal-overlay">
+  <div class="modal-content">
+    <h3>➕ افزودن مشتری جدید</h3>
+    <label>نام مشتری *</label>
+    <input id="nc_name" placeholder="نام را وارد کنید">
+    <label>تلفن</label>
+    <input id="nc_phone" placeholder="09123456789" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <label>تخصص مورد علاقه</label>
+    <select id="nc_specialty">
+      <option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option><option>رنگ</option><option>شینیون</option>
+    </select>
+    <label>تاریخ تولد (شمسی YYYY/MM/DD)</label>
+    <input id="nc_birth" placeholder="1375/03/21">
+    <label>یادداشت</label>
+    <input id="nc_note" placeholder="توضیحات اختیاری">
+    <div class="modal-actions">
+      <button type="button" class="btn btn-success" onclick="saveNewCustomer()">ذخیره</button>
+      <button type="button" class="btn btn-secondary" onclick="closeCustModal()">لغو</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

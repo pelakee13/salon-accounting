@@ -1,16 +1,122 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """وب‌اپ حسابداری هلیا بیوتی — Flask v2"""
-import os, sys, json
+import os, sys, json, secrets, re
 from datetime import datetime, timedelta
 from collections import defaultdict
-from flask import Flask, render_template, request, redirect, url_for, send_file, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, send_file, flash, jsonify, session, g
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
+import auth
+import invoice_pdf
+
+# login_required is provided by auth module
+login_required = auth.login_required
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = "helia-beauty-salon-fixed-secret-key-2024"  # fixed for persistent sessions
+app.config["SESSION_COOKIE_NAME"] = "helia_session"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Secure flag set per-request in before_request (depends on scheme)
+
+# ─── CSRF Protection (session-based, no extra deps) ───
+def generate_csrf_token():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
+    return session["csrf_token"]
+
+@app.context_processor
+def inject_csrf():
+    return dict(csrf_token=generate_csrf_token(), auth=auth)
+
+def csrf_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if request.method == "POST":
+            token = session.get("csrf_token", "")
+            submitted = request.form.get("csrf_token", "") or request.headers.get("X-CSRF-Token", "")
+            if not token or not secrets.compare_digest(token, submitted):
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "CSRF token نامعتبر است"}), 400
+                if request.endpoint == "login":
+                    flash("درخواست نامعتبر است، دوباره تلاش کنید", "error")
+                    return render_template("login.html")
+                flash("درخواست نامعتبر است (CSRF)", "error")
+                return redirect(url_for("dashboard"))
+        return f(*args, **kwargs)
+    return decorated
+
+# ─── Rate Limiting (simple, SQLite-backed) ───
+import sqlite3 as _sql
+_RATE_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ratelimit.db")
+def _rate_get_conn():
+    conn = _sql.connect(_RATE_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS login_attempts (
+        ip TEXT PRIMARY KEY, fails INTEGER DEFAULT 0,
+        first_fail TEXT, locked_until TEXT)""")
+    return conn
+
+def check_rate_limit(ip):
+    """Return (allowed: bool, retry_after_sec: int)."""
+    conn = _rate_get_conn()
+    now = datetime.now()
+    row = conn.execute("SELECT fails, locked_until FROM login_attempts WHERE ip=?", (ip,)).fetchone()
+    if row:
+        locked = row[1]
+        if locked:
+            locked_dt = datetime.strptime(locked, "%Y-%m-%d %H:%M:%S")
+            if now < locked_dt:
+                secs = int((locked_dt - now).total_seconds())
+                conn.close()
+                return False, secs
+    conn.close()
+    return True, 0
+
+def register_fail(ip):
+    conn = _rate_get_conn()
+    now = datetime.now()
+    row = conn.execute("SELECT fails FROM login_attempts WHERE ip=?", (ip,)).fetchone()
+    fails = (row[0] if row else 0) + 1
+    if fails >= 5:
+        lock = (now + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute("""INSERT INTO login_attempts (ip, fails, locked_until) VALUES (?,?,?)
+            ON CONFLICT(ip) DO UPDATE SET fails=?, locked_until=?""",
+            (ip, fails, lock, fails, lock))
+    else:
+        conn.execute("""INSERT INTO login_attempts (ip, fails, first_fail) VALUES (?,?,?)
+            ON CONFLICT(ip) DO UPDATE SET fails=?""",
+            (ip, fails, now.strftime("%Y-%m-%d %H:%M:%S"), fails))
+    conn.commit(); conn.close()
+
+def reset_fails(ip):
+    conn = _rate_get_conn()
+    conn.execute("DELETE FROM login_attempts WHERE ip=?", (ip,))
+    conn.commit(); conn.close()
+
+@app.before_request
+def require_login():
+    # Set Secure cookie flag if served over HTTPS (tunnel)
+    if request.scheme == "https":
+        app.config["SESSION_COOKIE_SECURE"] = True
+    # Public routes that don't need auth
+    public = {"login", "logout", "static"}
+    if request.endpoint in public or request.endpoint is None:
+        return None
+    if "user" not in session:
+        # Don't redirect API calls to HTML login; return 401 JSON
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "احراز هویت لازم است"}), 401
+        return redirect(url_for("login"))
+    # Role-based access control
+    role = session.get("role")
+    path = request.path
+    if not auth.role_can_access(role, path):
+        flash("شما دسترسی لازم برای این بخش را ندارید", "error")
+        return redirect(url_for("dashboard"))
+    return None
 
 # ─── Data Directory ───
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -151,6 +257,8 @@ def init_all():
             ws.cell(row=1, column=5, value="تاریخ تولد").font = HDR_FONT
             ws.cell(row=1, column=5).fill = PINK
             wb.save(CUSTOMERS_FILE)
+    # Authentication system (SQLite users.db)
+    auth.init_auth()
 
 # ─── Data Access: Employees ───
 def get_employees():
@@ -308,21 +416,91 @@ def _file_size(fp):
     s = os.path.getsize(fp)
     return f"{s//1024} KB" if s < 1048576 else f"{s//1048576} MB"
 
-# ─── Login (simplified — no password) ───
+# ─── Auth Routes ───
 @app.route("/login", methods=["GET", "POST"])
+@csrf_required
 def login():
-    return redirect(url_for("index"))
+    if request.method == "POST":
+        ip = request.remote_addr
+        allowed, retry = check_rate_limit(ip)
+        if not allowed:
+            flash(f"تلاش‌های ناموفق زیاد بود. لطفاً {retry} ثانیه صبر کنید", "error")
+            return render_template("login.html")
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        user = auth.authenticate(username, password)
+        if user:
+            auth.login_user(user)
+            reset_fails(ip)
+            flash(f"خوش‌آمدید {user['name']} ({auth.ROLES.get(user['role'], user['role'])})", "success")
+            return redirect(url_for("dashboard"))
+        register_fail(ip)
+        flash("نام کاربری یا رمز عبور اشتباه است", "error")
+    # If already logged in, go to dashboard
+    if "user" in session:
+        return redirect(url_for("dashboard"))
+    return render_template("login.html")
 
 @app.route("/logout")
 def logout():
-    return redirect(url_for("index"))
+    auth.logout_user()
+    flash("با موفقیت خارج شدید", "info")
+    return redirect(url_for("login"))
 
-def login_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        return f(*args, **kwargs)
-    return decorated
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+@csrf_required
+def change_password():
+    if request.method == "POST":
+        current = request.form.get("current_password", "")
+        new_pw = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        user = auth.get_user(session["user"])
+        # Validate current password
+        if not auth.check_password(current, user["password_hash"]):
+            flash("رمز عبور فعلی اشتباه است", "error")
+        # Validate new password policy
+        elif not re.fullmatch(r"^(?=.*[A-Za-z])(?=.*\d).{8,}$", new_pw):
+            flash("رمز جدید باید حداقل ۸ کاراکتر و شامل حرف و عدد باشد", "error")
+        elif new_pw != confirm:
+            flash("تکرار رمز جدید مطابقت ندارد", "error")
+        else:
+            auth.update_password(user["username"], new_pw)
+            flash("رمز عبور با موفقیت تغییر یافت", "success")
+            return redirect(url_for("dashboard"))
+    return render_template("change_password.html")
+
+@app.route("/users", methods=["GET", "POST"])
+@auth.role_required("admin")
+def manage_users():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            uname = request.form.get("username", "").strip()
+            pw = request.form.get("password", "")
+            name = request.form.get("name", "").strip()
+            role = request.form.get("role", "employee")
+            if not uname or not pw:
+                flash("نام کاربری و رمز عبور الزامی است", "error")
+            elif auth.get_user(uname):
+                flash("این نام کاربری قبلاً ثبت شده", "error")
+            else:
+                auth.create_user(uname, pw, name, role)
+                flash(f"کاربر «{uname}» با نقش {auth.ROLES.get(role, role)} ایجاد شد", "success")
+        elif action == "delete":
+            uname = request.form.get("username", "")
+            if uname == "admin":
+                flash("نمی‌توان کاربر مدیر اصلی را حذف کرد", "error")
+            elif uname == session.get("user"):
+                flash("شما نمی‌توانید حساب کاربری خود را حذف کنید", "error")
+            else:
+                conn = auth.get_db(); conn.execute("DELETE FROM users WHERE username=?", (uname,)); conn.commit(); conn.close()
+                flash(f"کاربر «{uname}» حذف شد", "success")
+        return redirect(url_for("manage_users"))
+    conn = auth.get_db()
+    users = [dict(r) for r in conn.execute("SELECT id, username, name, role, active, created_at FROM users ORDER BY id").fetchall()]
+    conn.close()
+    return render_template("users.html", users=users, roles=auth.ROLES)
 
 # ─── Dashboard ───
 @app.route("/dashboard")
@@ -520,6 +698,31 @@ def submit_transaction():
     if send_sms == "on":
         flash(f"📱 پیامک فاکتور برای {customer} ارسال خواهد شد (قابلیت در دست ساخت)", "info")
 
+    # ─── Generate PDF invoice ───
+    invoice_no = f"INV-{today.replace('/','')}-{int(datetime.now().timestamp())%100000:05d}"
+    pdf_dir = os.path.join(DATA_DIR, "invoices")
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_path = os.path.join(pdf_dir, f"{invoice_no}.pdf")
+    try:
+        emp_commissions = ", ".join([f"{it['employee']}: {it['commission']:,}" for it in items_data])
+        invoice_pdf.generate_invoice({
+            "salon_name": "آکادمی هلیا",
+            "invoice_no": invoice_no,
+            "date": today,
+            "customer": customer,
+            "phone": phone,
+            "items": items_data,
+            "subtotal": subtotal,
+            "discount": discount_amount,
+            "tip": tip,
+            "payment_method": payment_summary,
+            "final_amount": final_amount,
+            "employee_commissions": emp_commissions,
+        }, pdf_path)
+        session["last_invoice"] = invoice_no
+    except Exception as e:
+        app.logger.error(f"PDF gen failed: {e}")
+
     return redirect(url_for("index"))
 
 # ─── Routes: Reports ───
@@ -612,6 +815,18 @@ def monthly():
     for t in monthly_txns:
         employee_transactions[t["employee"]].append(t)
 
+    # ─── Previous month comparison ───
+    prev_m = m - 1
+    prev_y = y
+    if prev_m == 0:
+        prev_m = 12; prev_y = y - 1
+    prev_summary = _month_summary(prev_y, prev_m)
+    prev_month_str = f"{prev_y}/{prev_m:02d}"
+    def _delta(cur, prev):
+        if prev > 0:
+            return round((cur - prev) / prev * 100, 1)
+        return None
+
     return render_template("monthly.html", month_str=month_str, months=months,
         emp_totals=dict(emp_totals), details=details,
         grand_total=grand_total, grand_comm=grand_comm, grand_tips=grand_tips,
@@ -623,7 +838,26 @@ def monthly():
         total_expenses=total_expenses,
         profit=grand_total - total_expenses,
         expense_cats=dict(expense_cats),
-        employee_transactions=dict(employee_transactions))
+        employee_transactions=dict(employee_transactions),
+        prev_month_str=prev_month_str,
+        prev_summary=prev_summary,
+        prev_income=prev_summary["income"],
+        prev_expenses=prev_summary["expenses"],
+        prev_profit=prev_summary["profit"],
+        delta_income=_delta(grand_total, prev_summary["income"]),
+        delta_expenses=_delta(total_expenses, prev_summary["expenses"]),
+        delta_profit=_delta(grand_total - total_expenses, prev_summary["profit"]))
+
+def _month_summary(y, m):
+    """Compute income/expenses/profit for a given Jalali year/month."""
+    start = f"{y}/{m:02d}/01"
+    end = f"{y+1}/01/01" if m == 12 else f"{y}/{m+1:02d}/01"
+    txns = [t for t in get_transactions() if start <= t["date"] < end]
+    inc = sum(t.get("final_amount", t["amount"]) for t in txns)
+    exp = sum(e["amount"] for e in get_expenses(start_date=start, end_date=end))
+    tips = sum(t.get("tip", 0) for t in txns)
+    comm = sum(t.get("commission", 0) for t in txns)
+    return {"income": inc, "expenses": exp, "profit": inc - exp, "tips": tips, "commission": comm, "count": len(txns)}
 
 @app.route("/monthly/export/<int:y>/<int:m>")
 def export_monthly(y, m):
@@ -958,6 +1192,20 @@ def download(filename):
     if os.path.exists(fp): return send_file(fp, as_attachment=True)
     flash("فایل یافت نشد","error"); return redirect(url_for("backup_page"))
 
+@app.route("/invoice/<invoice_no>")
+@login_required
+def view_invoice(invoice_no):
+    fp = os.path.join(DATA_DIR, "invoices", f"{invoice_no}.pdf")
+    if os.path.exists(fp): return send_file(fp, as_attachment=False, mimetype="application/pdf")
+    flash("فاکتور یافت نشد","error"); return redirect(url_for("index"))
+
+@app.route("/invoice/pdf/<invoice_no>")
+@login_required
+def download_invoice(invoice_no):
+    fp = os.path.join(DATA_DIR, "invoices", f"{invoice_no}.pdf")
+    if os.path.exists(fp): return send_file(fp, as_attachment=True)
+    flash("فاکتور یافت نشد","error"); return redirect(url_for("index"))
+
 # ─── API ───
 @app.route("/api/services")
 def api_services():
@@ -970,6 +1218,28 @@ def api_employees():
 @app.route("/api/customers")
 def api_customers():
     return jsonify(get_customers())
+
+@app.route("/api/customers/add", methods=["POST"])
+@login_required
+def api_customers_add():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    specialty = (data.get("specialty") or "").strip()
+    birth_date = (data.get("birth_date") or "").strip()
+    note = (data.get("note") or "").strip()
+    if not name:
+        return jsonify({"ok": False, "error": "نام مشتری الزامی است"}), 400
+    custs = get_customers()
+    if any(c["name"] == name for c in custs):
+        return jsonify({"ok": False, "error": "این مشتری قبلاً ثبت شده"}), 409
+    custs.append({
+        "name": name, "phone": phone, "specialty": specialty,
+        "join_date": PersianDate.today_str(), "birth_date": birth_date,
+        "visit_count": 0, "note": note, "points": 0
+    })
+    save_customers(custs)
+    return jsonify({"ok": True, "name": name})
 
 @app.route("/api/calculate_commission", methods=["POST"])
 def api_calculate_commission():

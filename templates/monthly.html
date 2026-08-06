@@ -40,6 +40,40 @@
   </div>
 </div>
 
+<!-- Comparison with previous month -->
+<div class="card" style="background:linear-gradient(135deg,#ffffff 0%,#e3f2fd 100%)">
+  <h2>📊 مقایسه با ماه قبل ({{ prev_month_str }})</h2>
+  <div class="summary" style="margin-bottom:0">
+    <div class="box" style="background:#fff">
+      <div class="label">درآمد (تغییر نسبت به قبل)</div>
+      <div class="value green">{{ "{:,}".format(grand_total) }}</div>
+      {% if delta_income is not none %}
+      <div style="font-size:12px;margin-top:4px;color:{% if delta_income >= 0 %}var(--success){% else %}var(--danger){% endif %}">
+        {% if delta_income >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(delta_income) }}٪
+      </div>
+      {% else %}<div style="font-size:11px;color:var(--text-muted);margin-top:4px">ماه قبل: {{ "{:,}".format(prev_income) }}</div>{% endif %}
+    </div>
+    <div class="box" style="background:#fff">
+      <div class="label">هزینه‌ها (تغییر نسبت به قبل)</div>
+      <div class="value orange">{{ "{:,}".format(total_expenses) }}</div>
+      {% if delta_expenses is not none %}
+      <div style="font-size:12px;margin-top:4px;color:{% if delta_expenses <= 0 %}var(--success){% else %}var(--danger){% endif %}">
+        {% if delta_expenses <= 0 %}▼{% else %}▲{% endif %} {{ "%.1f"|format(delta_expenses) }}٪
+      </div>
+      {% else %}<div style="font-size:11px;color:var(--text-muted);margin-top:4px">ماه قبل: {{ "{:,}".format(prev_expenses) }}</div>{% endif %}
+    </div>
+    <div class="box" style="background:#fff">
+      <div class="label">سود خالص (تغییر نسبت به قبل)</div>
+      <div class="value {% if profit >= 0 %}green{% else %}red{% endif %}">{{ "{:,}".format(profit) }}</div>
+      {% if delta_profit is not none %}
+      <div style="font-size:12px;margin-top:4px;color:{% if delta_profit >= 0 %}var(--success){% else %}var(--danger){% endif %}">
+        {% if delta_profit >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(delta_profit) }}٪
+      </div>
+      {% else %}<div style="font-size:11px;color:var(--text-muted);margin-top:4px">ماه قبل: {{ "{:,}".format(prev_profit) }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+
 <!-- Charts -->
 <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
   <div class="card" style="flex:1;min-width:300px">

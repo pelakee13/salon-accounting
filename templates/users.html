@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">👥 مدیریت کاربران</h1>
+
+<div class="card">
+  <h2>➕ افزودن کاربر جدید</h2>
+  <form method="POST">
+    <input type="hidden" name="action" value="add">
+    <div class="form-row">
+      <div class="field"><label>نام کاربری *</label><input name="username" required placeholder="مثلاً reception1"></div>
+      <div class="field"><label>رمز عبور *</label><input type="password" name="password" required placeholder="رمز عبور"></div>
+      <div class="field"><label>نام نمایشی</label><input name="name" placeholder="مثلاً پذیرش"></div>
+      <div class="field" style="max-width:200px"><label>نقش</label>
+        <select name="role">
+          {% for r, label in roles.items() %}<option value="{{ r }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;align-items:end"><button type="submit" class="btn btn-success">افزودن</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>📋 لیست کاربران</h2>
+  <table>
+    <thead><tr><th>نام کاربری</th><th>نام</th><th>نقش</th><th>وضعیت</th><th>تاریخ عضویت</th><th>عملیات</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+      <td><strong>{{ u.username }}</strong></td>
+      <td>{{ u.name or '—' }}</td>
+      <td>{{ roles.get(u.role, u.role) }}</td>
+      <td>{% if u.active %}<span style="color:var(--success)">✅ فعال</span>{% else %}<span style="color:var(--danger)">❌ غیرفعال</span>{% endif %}</td>
+      <td>{{ u.created_at or '—' }}</td>
+      <td>
+        {% if u.username != 'admin' %}
+        <form method="POST" style="display:inline" onsubmit="return confirm('حذف کاربر «{{ u.username }}»؟')">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="username" value="{{ u.username }}">
+          <button class="btn btn-danger btn-sm">❌ حذف</button>
+        </form>
+        {% else %}<span style="color:var(--text-muted);font-size:12px">مدیر اصلی</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if not users %}<div class="empty">کاربری ثبت نشده</div>{% endif %}
+</div>
+
+<div class="card" style="background:var(--info-bg);border:1px solid #c6dafc">
+  <h2 style="border:none;margin-bottom:8px">📖 راهنمای نقش‌ها</h2>
+  <ul style="font-size:13px;line-height:2;color:var(--text-secondary)">
+    <li><strong>مالک / مدیر (admin):</strong> دسترسی کامل به تمام بخش‌ها + مدیریت کاربران</li>
+    <li><strong>پذیرش (reception):</strong> ثبت خدمات، مشتریان، گزارش‌ها، انبار، هزینه‌ها</li>
+    <li><strong>کارمند (employee):</strong> فقط مشاهده داشبورد و کمیسیون خودش</li>
+  </ul>
+</div>
+{% endblock %}
