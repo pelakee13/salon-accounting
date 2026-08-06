@@ -120,7 +120,7 @@ def init_all():
         "تاریخ","نام مشتری","نام خدمت","دسته‌بندی","نام کارمند",
         "مبلغ خالص","تخفیف","مبلغ نهایی","روش پرداخت","پورسانت کارمند","سهم سالن","یادداشت","انعام"
     ])
-    _ensure_workbook(CUSTOMERS_FILE, ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت","امتیاز"])
+    _ensure_workbook(CUSTOMERS_FILE, ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تاریخ تولد","تعداد مراجعه","یادداشت","امتیاز"])
     _ensure_workbook(EXPENSES_FILE, ["تاریخ","دسته‌بندی","مبلغ","توضیحات","روش پرداخت","یادداشت"])
     _ensure_workbook(INVENTORY_FILE, ["نام ماده","واحد","موجودی فعلی","حداقل موجودی","قیمت واحد (تومان)"])
     _ensure_workbook(INVENTORY_LOG_FILE, ["تاریخ","نوع","نام ماده","تعداد","علت/توضیح","لینک خدمت"])
@@ -133,6 +133,24 @@ def init_all():
                 if ws.cell(row=r, column=13).value is None:
                     ws.cell(row=r, column=13, value=0)
             wb.save(TRANSACTIONS_FILE)
+    # Migration: ensure 'birth_date' column exists in customers (index 4)
+    if os.path.exists(CUSTOMERS_FILE):
+        wb = load_workbook(CUSTOMERS_FILE); ws = wb.active
+        if ws.max_column < 8:
+            # shift existing columns if needed: old layout had 7 cols (no birth_date at idx4)
+            # old: name,phone,specialty,join_date,visit_count,note,points
+            # new: name,phone,specialty,join_date,birth_date,visit_count,note,points
+            for r in range(2, ws.max_row + 1):
+                visit = ws.cell(row=r, column=5).value
+                note = ws.cell(row=r, column=6).value
+                points = ws.cell(row=r, column=7).value if ws.max_column >= 7 else None
+                ws.cell(row=r, column=6, value=visit)
+                ws.cell(row=r, column=7, value=note)
+                ws.cell(row=r, column=8, value=points)
+                ws.cell(row=r, column=5, value="")
+            ws.cell(row=1, column=5, value="تاریخ تولد").font = HDR_FONT
+            ws.cell(row=1, column=5).fill = PINK
+            wb.save(CUSTOMERS_FILE)
 
 # ─── Data Access: Employees ───
 def get_employees():
@@ -169,16 +187,17 @@ def get_customers():
     rows = _read_rows(CUSTOMERS_FILE)
     result = []
     for r in rows:
-        cust = {"name":str(r[0]),"phone":str(r[1] or ""),"specialty":str(r[2] or ""),"join_date":str(r[3] or ""),"visit_count":int(r[4] or 0),"note":str(r[5] or "")}
-        cust["points"] = int(r[6]) if len(r) > 6 and r[6] else 0
+        cust = {"name":str(r[0]),"phone":str(r[1] or ""),"specialty":str(r[2] or ""),"join_date":str(r[3] or ""),
+                "birth_date":str(r[4] or ""),"visit_count":int(r[5] or 0),"note":str(r[6] or "")}
+        cust["points"] = int(r[7]) if len(r) > 7 and r[7] else 0
         result.append(cust)
     return result
 
 def save_customers(custs):
     wb = Workbook(); ws = wb.active; ws.title = "داده‌ها"
-    for c, h in enumerate(["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت","امتیاز"], 1):
+    for c, h in enumerate(["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تاریخ تولد","تعداد مراجعه","یادداشت","امتیاز"], 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
-    for cu in custs: ws.append([cu["name"],cu["phone"],cu["specialty"],cu["join_date"],cu["visit_count"],cu["note"],cu.get("points",0)])
+    for cu in custs: ws.append([cu["name"],cu["phone"],cu["specialty"],cu["join_date"],cu.get("birth_date",""),cu["visit_count"],cu["note"],cu.get("points",0)])
     wb.save(CUSTOMERS_FILE)
 
 # ─── Data Access: Transactions ───
@@ -346,6 +365,14 @@ def dashboard():
     inventory = get_inventory()
     low_stock = [it for it in inventory if it["stock"] <= it["min_stock"]]
 
+    # Birthday alerts: customers whose birth date (MM/DD) matches today
+    today_md = today[5:]  # "MM/DD" portion of "YYYY/MM/DD"
+    birthday_customers = []
+    for c in get_customers():
+        bd = c.get("birth_date", "")
+        if bd and len(bd) >= 5 and bd[5:] == today_md:
+            birthday_customers.append(c["name"])
+
     # Service category breakdown for pie chart
     cat_totals = defaultdict(int)
     for t in month_txns:
@@ -361,7 +388,8 @@ def dashboard():
         chart_expenses=json.dumps(chart_expenses_list),
         low_stock=low_stock,
         cat_labels=json.dumps(list(cat_totals.keys()), ensure_ascii=False),
-        cat_values=json.dumps(list(cat_totals.values()))
+        cat_values=json.dumps(list(cat_totals.values())),
+        birthday_customers=birthday_customers
     )
 
 # ─── Routes: Index ───
@@ -499,7 +527,12 @@ def submit_transaction():
 @login_required
 def reports():
     today = PersianDate.today_str()
-    txns = get_transactions(start_date=today, end_date=today)
+    all_txns = get_transactions()
+    emp_filter = request.args.get("employee", "").strip()
+    if emp_filter:
+        txns = [t for t in all_txns if t["date"] == today and t.get("employee","") == emp_filter]
+    else:
+        txns = [t for t in all_txns if t["date"] == today]
     emps = get_employees()
     emp_shares = {e["name"]: e["share_percent"] for e in emps}
     total = sum(t.get("final_amount", t["amount"]) for t in txns)
@@ -510,7 +543,7 @@ def reports():
         t["commission"] = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
     return render_template("reports.html", transactions=list(reversed(txns)),
         total=total, customers=customers_count, services_count=len(txns),
-        commission=commission, tips=tips, today=today)
+        commission=commission, tips=tips, today=today, employees=emps, selected_emp=emp_filter)
 
 # ─── Routes: Monthly ───
 @app.route("/monthly", methods=["GET","POST"])
@@ -799,10 +832,10 @@ def customers_page():
         action = request.form.get("action")
         custs = get_customers()
         if action == "add":
-            custs.append({"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":PersianDate.today_str(),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":0})
+            custs.append({"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":PersianDate.today_str(),"birth_date":request.form.get("birth_date",""),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":0})
         elif action == "edit":
             idx = int(request.form["idx"])
-            custs[idx] = {"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":custs[idx]["join_date"],"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":custs[idx].get("points",0)}
+            custs[idx] = {"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":custs[idx]["join_date"],"birth_date":request.form.get("birth_date",custs[idx].get("birth_date","")),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":custs[idx].get("points",0)}
         elif action == "delete":
             custs.pop(int(request.form["idx"]))
         save_customers(custs)
@@ -817,14 +850,14 @@ def customers_page():
 def export_customers():
     custs = get_customers()
     wb = Workbook(); ws = wb.active; ws.title = "دفترچه مشتریان"
-    headers = ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تعداد مراجعه","یادداشت","امتیاز"]
+    headers = ["نام","تلفن","تخصص مورد علاقه","تاریخ عضویت","تاریخ تولد","تعداد مراجعه","یادداشت","امتیاز"]
     for c, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
     for r, cu in enumerate(custs, 2):
         ws.cell(row=r,column=1,value=cu["name"]); ws.cell(row=r,column=2,value=cu["phone"])
         ws.cell(row=r,column=3,value=cu["specialty"]); ws.cell(row=r,column=4,value=cu["join_date"])
-        ws.cell(row=r,column=5,value=cu["visit_count"]); ws.cell(row=r,column=6,value=cu["note"])
-        ws.cell(row=r,column=7,value=cu.get("points",0))
+        ws.cell(row=r,column=5,value=cu.get("birth_date","")); ws.cell(row=r,column=6,value=cu["visit_count"])
+        ws.cell(row=r,column=7,value=cu["note"]); ws.cell(row=r,column=8,value=cu.get("points",0))
     for c in range(1,8): ws.column_dimensions[get_column_letter(c)].width = 18
     fp = os.path.join(DATA_DIR, f"customers_{PersianDate.today_str().replace('/','-')}.xlsx")
     wb.save(fp)

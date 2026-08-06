@@ -16,7 +16,7 @@
 <!-- Customers Table -->
 <div class="card">
   <table>
-    <thead><tr><th>نام</th><th>تلفن</th><th>تخصص</th><th>تاریخ عضویت</th><th>مراجعه</th><th>یادداشت</th><th>عملیات</th></tr></thead>
+    <thead><tr><th>نام</th><th>تلفن</th><th>تخصص</th><th>تاریخ عضویت</th><th>تاریخ تولد</th><th>مراجعه</th><th>یادداشت</th><th>عملیات</th></tr></thead>
     <tbody>
     {% for c in customers %}
     <tr>
@@ -24,10 +24,11 @@
       <td>{{ c.phone }}</td>
       <td>{{ c.specialty }}</td>
       <td>{{ c.join_date }}</td>
+      <td>{{ c.birth_date or '—' }}</td>
       <td>{{ c.visit_count }}</td>
       <td>{{ c.note }}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editCust({{ loop.index0 }},'{{ c.name }}','{{ c.phone }}','{{ c.specialty }}',{{ c.visit_count }},'{{ c.note }}')">✏️</button>
+        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editCust({{ loop.index0 }},'{{ c.name }}','{{ c.phone }}','{{ c.specialty }}',{{ c.visit_count }},'{{ c.note }}','{{ c.birth_date or '' }}')">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('آیا از حذف {{ c.name }} اطمینان دارید؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
           <button class="btn btn-danger btn-sm" style="min-width:40px;min-height:36px">❌</button>
@@ -56,6 +57,7 @@
       <label>تخصص مورد علاقه</label>
       <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option><option>رنگ</option><option>شینیون</option></select>
       <label>تعداد مراجعه</label><input type="number" name="visits" id="f_visits" value="0">
+      <label>تاریخ تولد (شمسی YYYY/MM/DD)</label><input name="birth_date" id="f_birth" placeholder="1375/03/21">
       <label>یادداشت</label><input name="note" id="f_note">
       <div class="modal-actions">
         <button type="submit" class="btn btn-success">ذخیره</button>
@@ -73,15 +75,16 @@ function openAdd(){
   document.getElementById('f_name').value='';document.getElementById('f_phone').value='';
   document.getElementById('f_specialty').value='';document.getElementById('f_visits').value='0';
   document.getElementById('f_note').value='';document.getElementById('f_idx').value='';
+  document.getElementById('f_birth').value='';
   document.getElementById('modal').style.display='flex';
 }
-function editCust(i,name,phone,spec,visits,note){
+function editCust(i,name,phone,spec,visits,note,birth){
   document.getElementById('f_action').value='edit';
   document.getElementById('modal_title').textContent='ویرایش مشتری';
   document.getElementById('f_idx').value=i;
   document.getElementById('f_name').value=name;document.getElementById('f_phone').value=phone;
   document.getElementById('f_specialty').value=spec;document.getElementById('f_visits').value=visits;
-  document.getElementById('f_note').value=note;
+  document.getElementById('f_note').value=note;document.getElementById('f_birth').value=birth||'';
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){document.getElementById('modal').style.display='none';}

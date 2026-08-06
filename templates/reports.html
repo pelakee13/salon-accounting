@@ -2,6 +2,22 @@
 {% block content %}
 <h1 class="page-title">📊 گزارش امروز — {{ today }}</h1>
 
+<!-- ─── Employee Filter ─── -->
+<div class="card">
+  <form method="GET" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+    <div class="field" style="max-width:220px">
+      <label>فیلتر بر اساس کارمند:</label>
+      <select name="employee" onchange="this.form.submit()">
+        <option value="">👥 همه کارمندان</option>
+        {% for e in employees %}
+        <option value="{{ e.name }}" {% if e.name == selected_emp %}selected{% endif %}>{{ e.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if selected_emp %}<a href="{{ url_for('reports') }}" class="btn btn-secondary btn-sm">✖ حذف فیلتر</a>{% endif %}
+  </form>
+</div>
+
 <div class="summary">
   <div class="box"><div class="label">💰 جمع کل امروز</div><div class="value green">{{ "{:,}".format(total) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
   <div class="box"><div class="label">👥 مشتری</div><div class="value">{{ customers }}</div></div>

@@ -2,6 +2,23 @@
 {% block content %}
 <h1 class="page-title">🏠 داشبورد — {{ today }}</h1>
 
+<!-- ─── Birthday Alerts ─── -->
+{% if birthday_customers %}
+<div class="alert-banner" style="flex-wrap:wrap;gap:10px;background:rgba(156,39,176,0.1);border:1px solid rgba(156,39,176,0.3)">
+  <div class="count" style="background:#9c27b0">{{ birthday_customers|length }}</div>
+  <div>
+    <strong>🎂 تولد امروز مشتریان:</strong>
+    <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
+      {% for name in birthday_customers %}
+      <span style="background:rgba(156,39,176,0.15);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;color:#9c27b0">
+        🎉 {{ name }}
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- ─── Low Stock Alerts ─── -->
 {% if low_stock %}
 <div class="alert-banner" style="flex-wrap:wrap;gap:10px">
