@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>آکادمی هلیا</title>
+<title>Heli Beauty Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -227,7 +228,7 @@
   <div class="sidebar-header">
     <span class="sidebar-logo">🌸</span>
     <div>
-      <div class="sidebar-title">آکادمی هلیا</div>
+      <div class="sidebar-title" style="font-family:'Poppins',sans-serif;letter-spacing:0.3px">Heli Beauty Studio</div>
       <div class="sidebar-sub">مدیریت سالن زیبایی</div>
     </div>
   </div>
@@ -264,7 +265,7 @@
 <div class="mobile-topbar" style="position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:none;align-items:center;gap:10px;box-shadow:var(--shadow-xs)">
   <span style="font-size:20px">🌸</span>
   <div>
-    <div style="font-size:15px;font-weight:700">آکادمی هلیا</div>
+    <div style="font-size:15px;font-weight:700;font-family:'Poppins',sans-serif;letter-spacing:0.3px">Heli Beauty Studio</div>
     <div style="font-size:10px;color:var(--text-muted)">{{ session.get('name','') }} — {{ {'admin':'مدیر','reception':'پذیرش','employee':'کارمند'}.get(session.get('role'),'') }}</div>
   </div>
   <a href="/logout" style="margin-right:auto;color:var(--danger);font-size:13px">🚪 خروج</a>
