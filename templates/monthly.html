@@ -158,7 +158,7 @@ new Chart(document.getElementById('catChart'),{
   type:'doughnut',
   data:{
     labels:{{ cat_labels|safe }},
-    datasets:[{data:{{ cat_values|safe }},backgroundColor:['#43a047','#1a73e8','#e37400','#9c27b0','#00bcd4','#ff5722']}]
+    datasets:[{data:{{ cat_values|safe }},backgroundColor:['#66bb6a','#1a73e8','#e37400','#9c27b0','#00bcd4','#ff5722']}]
   },
   options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Vazirmatn',size:11}}}}}
 });
