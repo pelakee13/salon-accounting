@@ -23,7 +23,7 @@ ROLES = {
 ROLE_ALLOWED = {
     "admin": "*",                                   # everything
     "reception": {"/", "/submit_transaction", "/customers", "/customer/",
-                  "/reports", "/dashboard"},        # only front-desk pages
+                  "/reports"},                       # front-desk only: customers, services, daily report
     "employee": {"/dashboard", "/reports"},         # own commission / today only
 }
 
