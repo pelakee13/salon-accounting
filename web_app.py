@@ -740,13 +740,10 @@ def reports():
     emp_shares = {e["name"]: e["share_percent"] for e in emps}
     total = sum(t.get("final_amount", t["amount"]) for t in txns)
     customers_count = len(set(t["customer"] for t in txns))
-    commission = sum(t.get("commission", 0) for t in txns)
     tips = sum(t.get("tip", 0) for t in txns)
-    for t in txns:
-        t["commission"] = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
     return render_template("reports.html", transactions=list(reversed(txns)),
         total=total, customers=customers_count, services_count=len(txns),
-        commission=commission, tips=tips, today=today, employees=emps, selected_emp=emp_filter)
+        tips=tips, today=today, employees=emps, selected_emp=emp_filter)
 
 # ─── Routes: Monthly ───
 @app.route("/monthly", methods=["GET","POST"])

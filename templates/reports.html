@@ -22,7 +22,6 @@
   <div class="box"><div class="label">💰 جمع کل امروز</div><div class="value green">{{ "{:,}".format(total) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
   <div class="box"><div class="label">👥 مشتری</div><div class="value">{{ customers }}</div></div>
   <div class="box"><div class="label">🛎️ خدمات</div><div class="value">{{ services_count }}</div></div>
-  <div class="box"><div class="label">💸 پورسانت</div><div class="value orange">{{ "{:,}".format(commission) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
   {% if tips > 0 %}
   <div class="box"><div class="label">💰 انعام</div><div class="value green">{{ "{:,}".format(tips) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
   {% endif %}
@@ -30,10 +29,10 @@
 
 <div class="card">
   <table>
-    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th><th>پورسانت</th></tr></thead>
+    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th></tr></thead>
     <tbody>
     {% for t in transactions %}
-    <tr><td>{{ t.date }}</td><td>{{ t.customer }}</td><td>{{ t.service }}</td><td>{{ t.category or '—' }}</td><td>{{ t.employee }}</td><td style="font-weight:600">{{ "{:,}".format(t.amount) }}</td><td>{{ "{:,}".format(t.commission) }}</td></tr>
+    <tr><td>{{ t.date }}</td><td>{{ t.customer }}</td><td>{{ t.service }}</td><td>{{ t.category or '—' }}</td><td>{{ t.employee }}</td><td style="font-weight:600">{{ "{:,}".format(t.amount) }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
