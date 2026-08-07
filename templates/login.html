@@ -12,7 +12,7 @@
 body{
   font-family:'Vazirmatn',Tahoma,Arial,sans-serif;
   min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#fce4ec 0%,#f8bbd0 30%,#f48fb1 60%,#ec407a 100%);
+  background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 30%,#81c784 60%,#43a047 100%);
   overflow:hidden;position:relative;
 }
 .bg-circle{position:absolute;border-radius:50%;background:rgba(255,255,255,0.08);animation:float 20s infinite ease-in-out}
@@ -21,14 +21,14 @@ body{
 .bg-circle:nth-child(3){width:200px;height:200px;top:40%;left:10%;animation-delay:-10s}
 @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,20px) scale(0.95)}}
 .login-card{
-  background:linear-gradient(135deg,#ffffff 0%,#fce4ec 100%);
+  background:linear-gradient(135deg,#ffffff 0%,#e8f5e9 100%);
   border-radius:24px;padding:48px 40px;width:380px;max-width:90vw;
   box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center;position:relative;z-index:10;
   animation:cardEntry 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 @keyframes cardEntry{from{opacity:0;transform:translateY(40px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-.logo{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#d81b60 0%,#ad1457 100%);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 8px 24px rgba(216,27,96,0.3)}
+.logo{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#43a047 0%,#2e7d32 100%);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 8px 24px rgba(67,160,71,0.3)}
 .logo span{font-size:42px;color:#fff;font-weight:700;line-height:1}
 .title{font-size:26px;font-weight:700;color:#1a1a2e;margin-bottom:8px}
 .subtitle{font-size:14px;color:#5f6368;margin-bottom:28px}
@@ -36,7 +36,7 @@ body{
 .field label{display:block;font-size:13px;color:#5f6368;margin-bottom:6px;font-weight:500}
 .field input,.field select{width:100%;padding:14px 16px;border:2px solid #e8eaed;border-radius:12px;
   font-family:'Vazirmatn',sans-serif;font-size:15px;background:#fff;color:#1a1a2e;text-align:right;transition:all 0.3s}
-.field input:focus,.field select:focus{outline:none;border-color:#d81b60;box-shadow:0 0 0 4px rgba(216,27,96,0.1)}
+.field input:focus,.field select:focus{outline:none;border-color:#43a047;box-shadow:0 0 0 4px rgba(67,160,71,0.1)}
 .submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,#43a047 0%,#2e7d32 100%);color:#fff;
   border:none;border-radius:12px;font-family:'Vazirmatn',sans-serif;font-size:16px;font-weight:600;cursor:pointer;
   transition:all 0.3s;box-shadow:0 4px 16px rgba(46,125,50,0.3)}

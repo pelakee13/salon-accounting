@@ -118,7 +118,7 @@
     </div>
 
     <!-- ─── Split Payment System ─── -->
-    <div style="background:linear-gradient(135deg,#ffffff 0%,#fce4ec 100%);border-radius:12px;padding:16px;border:1px solid rgba(216,27,96,0.1)">
+    <div style="background:linear-gradient(135deg,#ffffff 0%,#e8f5e9 100%);border-radius:12px;padding:16px;border:1px solid rgba(67,160,71,0.1)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <label style="font-weight:600;font-size:14px;color:var(--text)">💳 روش پرداخت</label>
         <div style="background:#e8f5e9;padding:6px 12px;border-radius:8px;font-size:13px">
@@ -221,7 +221,7 @@
 </div>
 
 <!-- ─── Summary & Submit ─── -->
-<div class="card" style="background:linear-gradient(135deg,#fff 0%,#fce4ec 100%)">
+<div class="card" style="background:linear-gradient(135deg,#fff 0%,#e8f5e9 100%)">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
     <div>
       <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">تعداد خدمات: <strong id="count_display">۰</strong></div>
@@ -509,11 +509,11 @@ function updatePaymentBalance() {
     submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
   } else if (remaining > 0 && credit === 0) {
     balanceWarning.innerHTML = `<span style="color:var(--danger)">⚠️ مبلغ باقیمانده: ${remaining.toLocaleString()} تومان</span>`;
-    balanceStatus.style.background = '#fce4ec';
+    balanceStatus.style.background = '#fce8e6';
     submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
   } else if (remaining < 0) {
     balanceWarning.innerHTML = `<span style="color:var(--danger)">❌ مبلغ پرداختی بیشتر از فاکتور است (${Math.abs(remaining).toLocaleString()} تومان مازاد)</span>`;
-    balanceStatus.style.background = '#fce4ec';
+    balanceStatus.style.background = '#fce8e6';
     submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
   } else if (remaining > 0 && credit > 0) {
     balanceWarning.innerHTML = `<span style="color:var(--warning)">📝 نسیه: ${remaining.toLocaleString()} تومان باقیمانده</span>`;
