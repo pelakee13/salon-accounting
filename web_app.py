@@ -590,6 +590,7 @@ def submit_transaction():
     discount_value = int(data.get("discount_value", 0) or 0)
     payment_method = data.get("payment_method", "نقدی")
     tip = int(data.get("tip", 0) or 0)
+    deposit = int(data.get("deposit", 0) or 0)
     split_methods = data.getlist("split_method[]")
     split_amounts = data.getlist("split_amount[]")
     if split_methods and split_amounts:
@@ -706,7 +707,7 @@ def submit_transaction():
     try:
         emp_commissions = ", ".join([f"{it['employee']}: {it['commission']:,}" for it in items_data])
         invoice_pdf.generate_invoice({
-            "salon_name": "آکادمی هلیا",
+            "salon_name": "Heli Beauty Studio",
             "invoice_no": invoice_no,
             "date": today,
             "customer": customer,
@@ -715,6 +716,7 @@ def submit_transaction():
             "subtotal": subtotal,
             "discount": discount_amount,
             "tip": tip,
+            "deposit": deposit,
             "payment_method": payment_summary,
             "final_amount": final_amount,
             "employee_commissions": emp_commissions,

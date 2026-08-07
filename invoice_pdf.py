@@ -28,8 +28,8 @@ def _register_font():
 
 _register_font()
 FONT_NAME = "Vazirmatn"
-PRIMARY = colors.HexColor("#d81b60")
-PINK = colors.HexColor("#fce4ec")
+PRIMARY = colors.HexColor("#81c784")
+PINK = colors.HexColor("#e8f5e9")
 DARK = colors.HexColor("#1a1a2e")
 GREY = colors.HexColor("#5f6368")
 LIGHT = colors.HexColor("#f5f5f5")
@@ -123,6 +123,8 @@ def generate_invoice(invoice, filepath):
         totals.append([Paragraph(_fa("تخفیف"), S["label"]), Paragraph(_fa(f"{int(invoice['discount']):,} تومان"), S["cell"])])
     if invoice.get("tip"):
         totals.append([Paragraph(_fa("انعام"), S["label"]), Paragraph(_fa(f"{int(invoice['tip']):,} تومان"), S["cell"])])
+    if invoice.get("deposit"):
+        totals.append([Paragraph(_fa("بیعانه پرداختی"), S["label"]), Paragraph(_fa(f"{int(invoice['deposit']):,} تومان"), S["cell"])])
     totals.append([Paragraph(_fa("روش پرداخت"), S["label"]), Paragraph(_fa(invoice.get("payment_method", "—")), S["cell"])])
     totals.append([Paragraph(_fa("مبلغ نهایی"), S["total"]), Paragraph(_fa(f"{int(invoice.get('final_amount',0)):,} تومان"), S["total"])])
     tt = Table(totals, colWidths=[40*mm, 108*mm])
