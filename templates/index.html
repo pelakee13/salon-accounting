@@ -117,6 +117,44 @@
       </div>
     </div>
 
+    <!-- ─── Deposit (بیعانه) Section ─── -->
+    <div style="background:linear-gradient(135deg,#ffffff 0%,#e8f5e9 100%);border-radius:12px;padding:16px;border:1px solid rgba(129,199,132,0.1);margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <label style="font-weight:600;font-size:14px;color:var(--text)">💳 بیعانه پرداخت‌شده (قبل از مراجعه)</label>
+        <div style="background:#e8f5e9;padding:6px 12px;border-radius:8px;font-size:13px">
+          <span style="color:var(--text-muted)">مانده بعد کسر:</span>
+          <strong style="color:var(--success);font-size:15px" id="deposit_remaining_display">۰</strong>
+          <span style="color:var(--text-muted)">تومان</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
+        <div class="field" style="max-width:150px">
+          <label>مبلغ بیعانه (تومان)</label>
+          <input type="number" name="deposit" id="deposit_input" min="0" value="0" placeholder="0"
+                 style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'');updateTotals()">
+        </div>
+        <div class="field" style="max-width:160px">
+          <label>تاریخ واریز</label>
+          <input type="text" name="deposit_date" id="deposit_date" placeholder="۱۴۰۵/۰۵/۱۶"
+                 style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left;direction:rtl">
+        </div>
+        <div class="field" style="max-width:150px">
+          <label>روش واریز</label>
+          <select name="deposit_method" id="deposit_method" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+            <option value="نقدی">نقدی</option>
+            <option value="کارت‌خوان">کارت‌خوان</option>
+            <option value="کارت‌به‌کارت">کارت‌به‌کارت</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;min-width:200px">
+          <label>توضیحات بیعانه</label>
+          <input type="text" name="deposit_note" id="deposit_note" placeholder="مثلاً: واریز به شماره کارت ۶۰۳۷..."
+                 style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:right;direction:rtl">
+        </div>
+      </div>
+    </div>
+
     <!-- ─── Split Payment System ─── -->
     <div style="background:linear-gradient(135deg,#ffffff 0%,#e8f5e9 100%);border-radius:12px;padding:16px;border:1px solid rgba(129,199,132,0.1)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -215,12 +253,6 @@
         <input type="number" name="tip" id="tip_input" min="0" value="0" placeholder="0"
                style="max-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left"
                oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:13px">
-        <span>💳 بیعانه (تومان):</span>
-        <input type="number" name="deposit" id="deposit_input" min="0" value="0" placeholder="0"
-               style="max-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left"
-               oninput="this.value=this.value.replace(/[^0-9]/g,'');updateTotals()">
       </div>
     </div>
   </div>
@@ -433,6 +465,9 @@ function updateTotals(){
   // Deposit (already paid earlier) -> subtract from final payable
   let deposit = parseInt(document.getElementById('deposit_input').value) || 0;
   let payable = Math.max(0, finalAmount - deposit);
+  
+  let remEl = document.getElementById('deposit_remaining_display');
+  if(remEl) remEl.textContent = payable.toLocaleString();
   
   document.getElementById('subtotal_display').textContent = subtotal.toLocaleString();
   document.getElementById('total_comm_display').textContent = totalComm.toLocaleString();

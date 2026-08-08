@@ -124,7 +124,15 @@ def generate_invoice(invoice, filepath):
     if invoice.get("tip"):
         totals.append([Paragraph(_fa("انعام"), S["label"]), Paragraph(_fa(f"{int(invoice['tip']):,} تومان"), S["cell"])])
     if invoice.get("deposit"):
-        totals.append([Paragraph(_fa("بیعانه پرداخت‌شده (قبلی)"), S["label"]), Paragraph(_fa(f"{int(invoice['deposit']):,} تومان"), S["cell"])])
+        dep = int(invoice['deposit'])
+        parts = [f"{dep:,} تومان"]
+        if invoice.get("deposit_method"):
+            parts.append(f"روش: {invoice['deposit_method']}")
+        if invoice.get("deposit_date"):
+            parts.append(f"تاریخ: {invoice['deposit_date']}")
+        totals.append([Paragraph(_fa("بیعانه پرداخت‌شده (قبلی)"), S["label"]), Paragraph(_fa(" — ".join(parts)), S["cell"])])
+        if invoice.get("deposit_note"):
+            totals.append([Paragraph(_fa("توضیحات بیعانه"), S["label"]), Paragraph(_fa(invoice['deposit_note']), S["cell"])])
         totals.append([Paragraph(_fa("مانده قابل پرداخت"), S["total"]), Paragraph(_fa(f"{int(invoice.get('payable_amount', invoice.get('final_amount',0))):,} تومان"), S["total"])])
     totals.append([Paragraph(_fa("روش پرداخت"), S["label"]), Paragraph(_fa(invoice.get("payment_method", "—")), S["cell"])])
     totals.append([Paragraph(_fa("مبلغ نهایی"), S["total"]), Paragraph(_fa(f"{int(invoice.get('final_amount',0)):,} تومان"), S["total"])])

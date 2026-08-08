@@ -591,6 +591,9 @@ def submit_transaction():
     payment_method = data.get("payment_method", "نقدی")
     tip = int(data.get("tip", 0) or 0)
     deposit = int(data.get("deposit", 0) or 0)
+    deposit_date = data.get("deposit_date", "").strip()
+    deposit_method = data.get("deposit_method", "").strip()
+    deposit_note = data.get("deposit_note", "").strip()
     split_methods = data.getlist("split_method[]")
     split_amounts = data.getlist("split_amount[]")
     if split_methods and split_amounts:
@@ -722,6 +725,9 @@ def submit_transaction():
             "discount": discount_amount,
             "tip": tip,
             "deposit": deposit,
+            "deposit_date": deposit_date,
+            "deposit_method": deposit_method,
+            "deposit_note": deposit_note,
             "payment_method": payment_summary,
             "final_amount": final_amount,
             "payable_amount": payable_amount,
