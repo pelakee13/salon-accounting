@@ -19,20 +19,24 @@
 <div class="card">
   <h2>📋 فیش حقوقی — {{ selected }}</h2>
   <table>
-    <thead><tr><th>کارمند</th><th>حقوق ثابت</th><th>پورسانت</th><th>کسورات/بیمه</th><th>جمع دریافتی خالص</th><th>نوع پرداخت</th><th>وضعیت</th><th>جزئیات</th></tr></thead>
+    <thead><tr><th>کارمند</th><th>حقوق ثابت</th><th>پورسانت</th><th>بیمه ثابت</th><th>کسورات متغیر</th><th>جمع دریافتی خالص</th><th>نوع پرداخت</th><th>وضعیت</th><th>عملیات</th></tr></thead>
     <tbody>
     {% for name, v in payroll.items() %}
     <tr>
       <td><strong>{{ name }}</strong></td>
       <td style="font-weight:600;color:var(--success)">{{ "{:,}".format(v.salary) }} تومان</td>
       <td style="color:var(--warning)">{{ "{:,}".format(v.commission) }} تومان</td>
-      <td style="color:var(--danger)">{{ "{:,}".format(v.deductions) }} تومان
+      <td style="color:var(--danger)">{{ "{:,}".format(v.ins_ded) }} تومان
         {% if v.deduction_note %}<br><small style="font-size:11px;color:var(--text-muted)">{{ v.deduction_note }}</small>{% endif %}
       </td>
+      <td style="color:var(--danger)">{{ "{:,}".format(v.var_ded) }} تومان</td>
       <td style="font-weight:600">{{ "{:,}".format(v.net) }} تومان</td>
       <td>{{ v.pay_type }}</td>
       <td>{{ v.status }}</td>
-      <td><a href="#emp-{{ loop.index }}" style="color:var(--primary);font-size:13px">مشاهده ▾</a></td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="openDed('{{ name }}')">➕ کسورات</button>
+        <a href="#emp-{{ loop.index }}" style="color:var(--primary);font-size:13px">مشاهده ▾</a>
+      </td>
     </tr>
     {% endfor %}
     {% if payroll %}
@@ -40,6 +44,7 @@
       <td>مجموع کل</td>
       <td>{{ "{:,}".format(total_gross) }} تومان</td>
       <td>{{ "{:,}".format(total_commission) }} تومان</td>
+      <td>{{ "{:,}".format(total_gross - total_commission - total_ded) }} تومان</td>
       <td>{{ "{:,}".format(total_ded) }} تومان</td>
       <td>{{ "{:,}".format(total_net) }} تومان</td>
       <td></td><td></td><td></td>
@@ -84,5 +89,72 @@
   {% endif %}
 </div>
 {% endfor %}
+
+
+
+<!-- Deduction Modal -->
+<div id="dedModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>➖ ثبت کسورات / برداشت</h3>
+    <form method="POST" action="/payroll/deduction">
+      <input type="hidden" name="month" value="{{ selected }}">
+      <label>کارمند</label>
+      <select name="employee" required>
+        {% for name, v in payroll.items() %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+      </select>
+      <label>نوع کسورات</label>
+      <select name="dtype">
+        <option value="مساعده">مساعده</option>
+        <option value="برداشت از انبار">برداشت از انبار</option>
+        <option value="جریمه">جریمه</option>
+        <option value="بیمه اضافه">بیمه اضافه</option>
+        <option value="سایر">سایر</option>
+      </select>
+      <label>مبلغ (تومان)</label>
+      <input type="number" name="amount" min="1" required placeholder="مثلاً ۵۰۰,۰۰۰">
+      <label>توضیحات</label>
+      <input type="text" name="note" placeholder="مثلاً مساعده عید / لاک از انبار" style="direction:rtl;text-align:right">
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-success">ثبت</button>
+        <button type="button" class="btn btn-secondary" onclick="closeDed()">لغو</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- This Month's Deductions List -->
+<div class="card">
+  <h2>📋 کسورات ثبت‌شده — {{ selected }}</h2>
+  {% if deductions_list %}
+  <table>
+    <thead><tr><th>کارمند</th><th>نوع</th><th>مبلغ</th><th>تاریخ ثبت</th><th>توضیحات</th><th>حذف</th></tr></thead>
+    <tbody>
+    {% for d in deductions_list %}
+    <tr>
+      <td><strong>{{ d.employee }}</strong></td>
+      <td>{{ d.type }}</td>
+      <td style="color:var(--danger);font-weight:600">{{ "{:,}".format(d.amount) }} تومان</td>
+      <td>{{ d.date }}</td>
+      <td>{{ d.note }}</td>
+      <td>
+        <form method="POST" action="/payroll/deduction/delete" style="display:inline" onsubmit="return confirm('حذف این کسورات؟')">
+          <input type="hidden" name="idx" value="{{ loop.index0 }}">
+          <input type="hidden" name="month" value="{{ selected }}">
+          <button class="btn btn-danger btn-sm">❌</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">کسوراتی برای این ماه ثبت نشده</div>
+  {% endif %}
+</div>
+
+<script>
+function openDed(name){ document.querySelector('#dedModal select[name=employee]').value=name; document.getElementById('dedModal').style.display='flex'; }
+function closeDed(){ document.getElementById('dedModal').style.display='none'; }
+</script>
 
 {% endblock %}

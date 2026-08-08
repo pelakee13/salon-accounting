@@ -310,27 +310,36 @@ def save_employees(emps):
         ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e.get("salary",0),e.get("pay_type","ماهانه"),e.get("start_date",""),e.get("status","فعال"),e.get("deductions",0),e.get("deduction_note","")])
     wb.save(EMPLOYEES_FILE)
 
-def employee_payroll(employees, monthly_txns):
+def employee_payroll(employees, monthly_txns, month=None):
     """محاسبه حقوق و دستمزد کارمندان برای تراکنش‌های یک ماه.
-    returns: {emp_name: {salary, commission, deductions, deduction_note, net, gross, pay_type, status}}
+    month: e.g. "1404/05" — used to filter variable deductions
+    returns: {emp_name: {salary, commission, ins_ded, var_ded, deductions, deduction_note, net, gross, pay_type, status}}
     """
     emp_shares = {e["name"]: e["share_percent"] for e in employees}
     comm_by_emp = defaultdict(int)
     for t in monthly_txns:
         c = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
         comm_by_emp[t["employee"]] += c
+    var_ded = defaultdict(int)
+    if month:
+        for d in get_deductions(month):
+            var_ded[d["employee"]] += d["amount"]
     result = {}
     for e in employees:
         name = e["name"]
         salary = e.get("salary", 0)
         commission = comm_by_emp.get(name, 0)
-        deductions = e.get("deductions", 0)
+        ins_ded = e.get("deductions", 0)        # fixed insurance
+        var = var_ded.get(name, 0)               # variable (loans, inventory, etc.)
+        total_ded = ins_ded + var
         gross = salary + commission
-        net = gross - deductions
+        net = gross - total_ded
         result[name] = {
             "salary": salary,
             "commission": commission,
-            "deductions": deductions,
+            "ins_ded": ins_ded,
+            "var_ded": var,
+            "deductions": total_ded,
             "deduction_note": e.get("deduction_note", ""),
             "gross": gross,
             "net": net,
@@ -338,6 +347,42 @@ def employee_payroll(employees, monthly_txns):
             "status": e.get("status", "فعال"),
         }
     return result
+
+# ─── Data Access: Employee Deductions (variable, per month) ───
+DED_FILE = os.path.join(DATA_DIR, "employee_deductions.xlsx")
+DED_HEADERS = ["کارمند", "نوع", "مبلغ", "تاریخ", "ماه", "توضیحات"]
+
+def get_deductions(month=None):
+    rows = _read_rows(DED_FILE)
+    result = []
+    for r in rows:
+        d = {"employee": str(r[0]), "type": str(r[1] or ""), "amount": int(r[2] or 0),
+             "date": str(r[3] or ""), "month": str(r[4] or ""), "note": str(r[5] or "")}
+        if month is None or d["month"] == month:
+            result.append(d)
+    return result
+
+def add_deduction(employee, dtype, amount, date, month, note):
+    add_expense(date, "کسورات کارمند", amount, f"کسورات {employee} — {dtype}: {note}", "نقدی", "ثبت از فیش حقوقی")
+    rows = _read_rows(DED_FILE)
+    rows.append([employee, dtype, amount, date, month, note])
+    wb = Workbook(); ws = wb.active; ws.title = "کسورات"
+    for c, h in enumerate(DED_HEADERS, 1):
+        cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
+    for r in rows:
+        ws.append(list(r))
+    wb.save(DED_FILE)
+
+def delete_deduction(idx):
+    rows = _read_rows(DED_FILE)
+    if 0 <= idx < len(rows):
+        rows.pop(idx)
+        wb = Workbook(); ws = wb.active; ws.title = "کسورات"
+        for c, h in enumerate(DED_HEADERS, 1):
+            cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
+        for r in rows:
+            ws.append(list(r))
+        wb.save(DED_FILE)
 
 # ─── Data Access: Services ───
 def get_services():
@@ -1242,7 +1287,8 @@ def payroll_page():
     end = f"{sy+1}/01/01" if sm == 12 else f"{sy}/{sm+1:02d}/01"
     txns = get_transactions(start_date=start, end_date=end)
     emps = get_employees()
-    pr = employee_payroll(emps, txns)
+    pr = employee_payroll(emps, txns, month=selected)
+    deductions_list = get_deductions(month=selected)
     total_gross = sum(v["gross"] for v in pr.values())
     total_ded = sum(v["deductions"] for v in pr.values())
     total_net = sum(v["net"] for v in pr.values())
@@ -1255,7 +1301,33 @@ def payroll_page():
     return render_template("payroll.html",
         selected=selected, months=months,
         payroll=pr, total_gross=total_gross, total_ded=total_ded, total_net=total_net, total_commission=total_commission,
+        deductions_list=deductions_list,
         employee_transactions={e["name"]: [t for t in txns if t["employee"]==e["name"]] for e in emps})
+
+@app.route("/payroll/deduction", methods=["POST"])
+@login_required
+def payroll_add_deduction():
+    emp = request.form.get("employee", "")
+    dtype = request.form.get("dtype", "سایر")
+    amount = int(request.form.get("amount", 0) or 0)
+    month = request.form.get("month", "")
+    note = request.form.get("note", "")
+    today = PersianDate.today_str()
+    if emp and amount > 0 and month:
+        add_deduction(emp, dtype, amount, today, month, note)
+        flash(f"✅ کسورات «{dtype}» برای {emp} ثبت شد ({amount:,} تومان)", "success")
+    else:
+        flash("لطفاً کارمند، مبلغ و ماه را وارد کنید", "error")
+    return redirect(url_for("payroll_page", month=month))
+
+@app.route("/payroll/deduction/delete", methods=["POST"])
+@login_required
+def payroll_delete_deduction():
+    idx = int(request.form.get("idx", -1))
+    month = request.form.get("month", "")
+    delete_deduction(idx)
+    flash("🗑️ کسورات حذف شد", "info")
+    return redirect(url_for("payroll_page", month=month))
 
 @app.route("/payroll/pay", methods=["POST"])
 @login_required
