@@ -95,6 +95,14 @@
     <span>👤 {{ emp_name }}</span>
     <span style="font-size:13px;color:var(--text-muted)">{{ emp_txns|length }} خدمت — {{ "{:,}".format(emp_txns|map(attribute='final_amount')|sum) }} تومان</span>
   </h2>
+  {% set pr = payroll.get(emp_name) %}
+  {% if pr %}
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:13px">
+    <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">💰 حقوق ثابت: <strong>{{ "{:,}".format(pr.salary) }}</strong> تومان</span>
+    <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">📊 پورسانت ماه: <strong>{{ "{:,}".format(pr.commission) }}</strong> تومان</span>
+    <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">✅ جمع پرداختی: <strong>{{ "{:,}".format(pr.total) }}</strong> تومان</span>
+  </div>
+  {% endif %}
   <table>
     <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>مبلغ</th><th>پورسانت</th></tr></thead>
     <tbody>
@@ -124,6 +132,35 @@
     {% endfor %}
     {% if details %}
     <tr style="background:var(--primary);color:#fff;font-weight:600"><td>مجموع کل</td><td></td><td>{{ total_count }}</td><td>{{ "{:,}".format(grand_total) }}</td><td>{{ "{:,}".format(grand_comm) }}</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Payroll Section -->
+<div class="card">
+  <h2>💼 حقوق و دستمزد کارمندان — {{ month_str }}</h2>
+  <table>
+    <thead><tr><th>کارمند</th><th>حقوق ثابت</th><th>پورسانت ماه</th><th>جمع دریافتی</th><th>نوع پرداخت</th><th>وضعیت</th></tr></thead>
+    <tbody>
+    {% for name, p in payroll.items() %}
+    <tr>
+      <td><strong>{{ name }}</strong></td>
+      <td style="font-weight:600;color:var(--success)">{{ "{:,}".format(p.salary) }} تومان</td>
+      <td style="color:var(--warning)">{{ "{:,}".format(p.commission) }} تومان</td>
+      <td style="font-weight:600">{{ "{:,}".format(p.total) }} تومان</td>
+      <td>{{ p.pay_type }}</td>
+      <td>{{ p.status }}</td>
+    </tr>
+    {% endfor %}
+    {% if payroll %}
+    <tr style="background:var(--primary);color:#fff;font-weight:600">
+      <td>مجموع کل</td>
+      <td>{{ "{:,}".format(total_salary) }} تومان</td>
+      <td>{{ "{:,}".format(total_payroll - total_salary) }} تومان</td>
+      <td>{{ "{:,}".format(total_payroll) }} تومان</td>
+      <td></td><td></td>
+    </tr>
     {% endif %}
     </tbody>
   </table>

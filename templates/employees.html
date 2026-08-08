@@ -4,13 +4,14 @@
 
 <div class="card">
   <table>
-    <thead><tr><th>نام</th><th>تخصص</th><th>تلفن</th><th>درصد سهم</th><th>عملیات</th></tr></thead>
+    <thead><tr><th>نام</th><th>تخصص</th><th>تلفن</th><th>درصد سهم</th><th>حقوق ثابت</th><th>نوع پرداخت</th><th>وضعیت</th><th>عملیات</th></tr></thead>
     <tbody>
     {% for e in employees %}
     <tr>
       <td><strong>{{ e.name }}</strong></td><td>{{ e.specialty }}</td><td>{{ e.phone }}</td><td>{{ e.share_percent }}%</td>
+      <td>{{ "{:,}".format(e.salary) }} تومان</td><td>{{ e.pay_type }}</td><td>{{ e.status }}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editEmp({{ loop.index0 }},'{{ e.name }}','{{ e.specialty }}','{{ e.phone }}',{{ e.share_percent }})">✏️</button>
+        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editEmp({{ loop.index0 }},'{{ e.name }}','{{ e.specialty }}','{{ e.phone }}',{{ e.share_percent }},{{ e.salary }},'{{ e.pay_type }}','{{ e.start_date }}','{{ e.status }}')">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('حذف {{ e.name }}؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
           <button class="btn btn-danger btn-sm" style="min-width:40px;min-height:36px">❌</button>
@@ -24,6 +25,9 @@
 </div>
 
 <button class="btn btn-primary" style="position:fixed;bottom:24px;left:24px;padding:14px 24px;border-radius:50px;box-shadow:0 4px 16px rgba(0,0,0,0.15)" onclick="openAdd()">➕ افزودن کارمند</button>
+<form method="POST" action="/payroll/pay" style="position:fixed;bottom:24px;right:24px">
+  <button type="submit" class="btn btn-success" style="padding:14px 24px;border-radius:50px;box-shadow:0 4px 16px rgba(0,0,0,0.15)" onclick="return confirm('ثبت پرداخت حقوق ماه جاری برای همه کارمندان فعال؟')">💼 ثبت پرداخت حقوق ماه جاری</button>
+</form>
 
 <div id="modal" class="modal-overlay">
   <div class="modal-content">
@@ -36,6 +40,12 @@
       <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option></select>
       <label>تلفن</label><input name="phone" id="f_phone" placeholder="09123456789" pattern="^09\d{9}$" maxlength="11" title="شماره موبایل معتبر (11 رقمی با 09)" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
       <label>درصد سهم (پورسانت)</label><input type="number" name="share" id="f_share" value="0" min="0" max="100">
+      <label>حقوق ثابت ماهانه (تومان)</label><input type="number" name="salary" id="f_salary" value="0" min="0">
+      <label>نوع پرداخت حقوق</label>
+      <select name="pay_type" id="f_pay_type"><option value="ماهانه">ماهانه</option><option value="روزانه">روزانه</option><option value="ساعتی">ساعتی</option></select>
+      <label>تاریخ شروع همکاری</label><input type="text" name="start_date" id="f_start_date" placeholder="1404/01/01" style="direction:rtl;text-align:right">
+      <label>وضعیت</label>
+      <select name="status" id="f_status"><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
       <div class="modal-actions">
         <button type="submit" class="btn btn-success">ذخیره</button>
         <button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button>
@@ -50,15 +60,19 @@ function openAdd(){
   document.getElementById('modal_title').textContent='افزودن کارمند';
   document.getElementById('f_name').value='';document.getElementById('f_specialty').value='';
   document.getElementById('f_phone').value='';document.getElementById('f_share').value='0';
+  document.getElementById('f_salary').value='0';document.getElementById('f_pay_type').value='ماهانه';
+  document.getElementById('f_start_date').value='';document.getElementById('f_status').value='فعال';
   document.getElementById('f_idx').value='';
   document.getElementById('modal').style.display='flex';
 }
-function editEmp(i,name,spec,phone,share){
+function editEmp(i,name,spec,phone,share,salary,payType,startDate,status){
   document.getElementById('f_action').value='edit';
   document.getElementById('modal_title').textContent='ویرایش کارمند';
   document.getElementById('f_idx').value=i;
   document.getElementById('f_name').value=name;document.getElementById('f_specialty').value=spec;
   document.getElementById('f_phone').value=phone;document.getElementById('f_share').value=share;
+  document.getElementById('f_salary').value=salary;document.getElementById('f_pay_type').value=payType;
+  document.getElementById('f_start_date').value=startDate;document.getElementById('f_status').value=status;
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){document.getElementById('modal').style.display='none';}

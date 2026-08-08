@@ -177,10 +177,10 @@ class PersianDate:
 
 # ─── Default Data ───
 DEFAULT_EMPLOYEES = [
-    {"name":"مریم","specialty":"مو","phone":"","share_percent":0},
-    {"name":"زهرا","specialty":"ناخن","phone":"","share_percent":0},
-    {"name":"سارا","specialty":"ابرو","phone":"","share_percent":0},
-    {"name":"نیلوفر","specialty":"مژه","phone":"","share_percent":0},
+    {"name":"مریم","specialty":"مو","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
+    {"name":"زهرا","specialty":"ناخن","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
+    {"name":"سارا","specialty":"ابرو","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
+    {"name":"نیلوفر","specialty":"مژه","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
 ]
 DEFAULT_SERVICES = [
     {"name":"رنگ مو","category":"مو","default_price":80000},
@@ -221,12 +221,30 @@ def _read_rows(fp):
     return [row for row in ws.iter_rows(min_row=2, values_only=True) if row[0]]
 
 def init_all():
-    _ensure_workbook(EMPLOYEES_FILE, ["نام","تخصص","تلفن","درصد سهم"])
+    _ensure_workbook(EMPLOYEES_FILE, ["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت"])
     ws = load_workbook(EMPLOYEES_FILE).active
     if ws.max_row <= 1:
         wb = load_workbook(EMPLOYEES_FILE); ws = wb.active
-        for e in DEFAULT_EMPLOYEES: ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"]])
+        for e in DEFAULT_EMPLOYEES: ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e["salary"],e["pay_type"],e["start_date"],e["status"]])
         wb.save(EMPLOYEES_FILE)
+    # Migration: ensure new employee columns exist (for pre-existing files)
+    if os.path.exists(EMPLOYEES_FILE):
+        wb = load_workbook(EMPLOYEES_FILE); ws = wb.active
+        want = ["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت"]
+        # rewrite header if shorter than 8 cols
+        if ws.max_column < 8:
+            # shift: append missing columns with defaults
+            for r in range(2, ws.max_row + 1):
+                name = str(ws.cell(row=r, column=1).value or "")
+                # keep existing 4 fields, default new ones
+                ws.cell(row=r, column=5, value=0)
+                ws.cell(row=r, column=6, value="ماهانه")
+                ws.cell(row=r, column=7, value="")
+                ws.cell(row=r, column=8, value="فعال")
+            for c, h in enumerate(want, 1):
+                ws.cell(row=1, column=c, value=h).font = HDR_FONT
+                ws.cell(row=1, column=c).fill = PINK
+            wb.save(EMPLOYEES_FILE)
     _ensure_workbook(SERVICES_FILE, ["نام خدمت","دسته‌بندی","قیمت پیش‌فرض"])
     ws2 = load_workbook(SERVICES_FILE).active
     if ws2.max_row <= 1:
@@ -274,14 +292,51 @@ def init_all():
 # ─── Data Access: Employees ───
 def get_employees():
     rows = _read_rows(EMPLOYEES_FILE)
-    return [{"name":str(r[0]),"specialty":str(r[1] or ""),"phone":str(r[2] or ""),"share_percent":float(r[3] or 0)} for r in rows]
+    result = []
+    for r in rows:
+        result.append({
+            "name":str(r[0]),
+            "specialty":str(r[1] or ""),
+            "phone":str(r[2] or ""),
+            "share_percent":float(r[3] or 0),
+            "salary":int(r[4] or 0),
+            "pay_type":str(r[5] or "ماهانه"),
+            "start_date":str(r[6] or ""),
+            "status":str(r[7] or "فعال"),
+        })
+    return result
 
 def save_employees(emps):
     wb = Workbook(); ws = wb.active; ws.title = "داده‌ها"
-    for c, h in enumerate(["نام","تخصص","تلفن","درصد سهم"], 1):
+    for c, h in enumerate(["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت"], 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
-    for e in emps: ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"]])
+    for e in emps:
+        ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e.get("salary",0),e.get("pay_type","ماهانه"),e.get("start_date",""),e.get("status","فعال")])
     wb.save(EMPLOYEES_FILE)
+
+def employee_payroll(employees, monthly_txns):
+    """محاسبه حقوق و دستمزد کارمندان برای تراکنش‌های یک ماه.
+    returns: {emp_name: {salary, commission, total, pay_type, status}}
+    """
+    emp_shares = {e["name"]: e["share_percent"] for e in employees}
+    # commission per employee this month
+    comm_by_emp = defaultdict(int)
+    for t in monthly_txns:
+        c = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
+        comm_by_emp[t["employee"]] += c
+    result = {}
+    for e in employees:
+        name = e["name"]
+        salary = e.get("salary", 0)
+        commission = comm_by_emp.get(name, 0)
+        result[name] = {
+            "salary": salary,
+            "commission": commission,
+            "total": salary + commission,
+            "pay_type": e.get("pay_type", "ماهانه"),
+            "status": e.get("status", "فعال"),
+        }
+    return result
 
 # ─── Data Access: Services ───
 def get_services():
@@ -536,6 +591,10 @@ def dashboard():
     month_expenses = sum(e["amount"] for e in get_expenses(start_date=month_start, end_date=month_end.replace("/01","/31")))
     month_profit = month_total - month_expenses
 
+    # Total fixed salary for current month (all active employees)
+    _emps = get_employees()
+    month_salary_total = sum(e["salary"] for e in _emps if e.get("status", "فعال") == "فعال")
+
     # Last 7 days chart data
     chart_labels = []
     chart_income = []
@@ -587,7 +646,8 @@ def dashboard():
         cat_labels=json.dumps(list(cat_totals.keys()), ensure_ascii=False),
         cat_values=json.dumps(list(cat_totals.values())),
         birthday_customers=birthday_customers,
-        birthday_soon=birthday_soon
+        birthday_soon=birthday_soon,
+        month_salary_total=month_salary_total
     )
 
 # ─── Routes: Index ───
@@ -858,6 +918,11 @@ def monthly():
             return round((cur - prev) / prev * 100, 1)
         return None
 
+    # Payroll for this month
+    payroll = employee_payroll(get_employees(), monthly_txns)
+    total_salary = sum(p["salary"] for p in payroll.values())
+    total_payroll = sum(p["total"] for p in payroll.values())
+
     return render_template("monthly.html", month_str=month_str, months=months,
         emp_totals=dict(emp_totals), details=details,
         grand_total=grand_total, grand_comm=grand_comm, grand_tips=grand_tips,
@@ -877,7 +942,8 @@ def monthly():
         prev_profit=prev_summary["profit"],
         delta_income=_delta(grand_total, prev_summary["income"]),
         delta_expenses=_delta(total_expenses, prev_summary["expenses"]),
-        delta_profit=_delta(grand_total - total_expenses, prev_summary["profit"]))
+        delta_profit=_delta(grand_total - total_expenses, prev_summary["profit"]),
+        payroll=payroll, total_salary=total_salary, total_payroll=total_payroll)
 
 def _month_summary(y, m):
     """Compute income/expenses/profit for a given Jalali year/month."""
@@ -1061,6 +1127,11 @@ def profit_loss():
         cat = t.get("category", "") or "نامشخص"
         income_cats[cat] += t.get("final_amount", t["amount"])
 
+    # Payroll for selected period
+    payroll = employee_payroll(get_employees(), txns)
+    total_salary = sum(p["salary"] for p in payroll.values())
+    total_payroll = sum(p["total"] for p in payroll.values())
+
     return render_template("profit_loss.html",
         title=title, period=period,
         start_date=start_date, end_date=end_date,
@@ -1068,7 +1139,8 @@ def profit_loss():
         total_tips=total_tips, total_expenses=total_expenses,
         net_profit=net_profit,
         expense_cats=dict(expense_cats), income_cats=dict(income_cats),
-        txn_count=len(txns), expense_count=len(expenses))
+        txn_count=len(txns), expense_count=len(expenses),
+        payroll=payroll, total_salary=total_salary, total_payroll=total_payroll)
 
 # ─── Routes: Customer History ───
 @app.route("/customer/<name>")
@@ -1135,15 +1207,38 @@ def employees_page():
     if request.method == "POST":
         action = request.form.get("action")
         emps = get_employees()
+        base = {"name":request.form["name"],"specialty":request.form.get("specialty",""),"phone":request.form.get("phone",""),
+                "share_percent":float(request.form.get("share","0") or 0),
+                "salary":int(request.form.get("salary","0") or 0),
+                "pay_type":request.form.get("pay_type","ماهانه"),
+                "start_date":request.form.get("start_date",""),
+                "status":request.form.get("status","فعال")}
         if action == "add":
-            emps.append({"name":request.form["name"],"specialty":request.form.get("specialty",""),"phone":request.form.get("phone",""),"share_percent":float(request.form.get("share","0") or 0)})
+            emps.append(base)
         elif action == "edit":
-            emps[int(request.form["idx"])] = {"name":request.form["name"],"specialty":request.form.get("specialty",""),"phone":request.form.get("phone",""),"share_percent":float(request.form.get("share","0") or 0)}
+            emps[int(request.form["idx"])] = base
         elif action == "delete":
             emps.pop(int(request.form["idx"]))
         save_employees(emps)
         return redirect(url_for("employees_page"))
     return render_template("employees.html", employees=get_employees())
+
+@app.route("/payroll/pay", methods=["POST"])
+@login_required
+def payroll_pay():
+    today = PersianDate.today_str()
+    emps = get_employees()
+    active = [e for e in emps if e.get("status", "فعال") == "فعال" and e.get("salary", 0) > 0]
+    if not active:
+        flash("کارمند فعالی با حقوق ثابت وجود ندارد", "info")
+        return redirect(url_for("employees_page"))
+    total = 0
+    for e in active:
+        amt = e["salary"]
+        total += amt
+        add_expense(today, "حقوق و دستمزد", amt, f"پرداخت حقوق {e['name']} — {e.get('pay_type','ماهانه')}", "نقدی", "ثبت خودکار از پرونده حقوق")
+    flash(f"✅ حقوق {len(active)} کارمند ثبت شد (مجموع {total:,} تومان)", "success")
+    return redirect(url_for("employees_page"))
 
 # ─── Routes: Services ───
 @app.route("/services", methods=["GET","POST"])

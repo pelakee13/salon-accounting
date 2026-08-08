@@ -61,6 +61,35 @@
   </div>
 </div>
 
+<!-- Payroll -->
+<div class="card">
+  <h2>💼 حقوق و دستمزد کارمندان</h2>
+  <table>
+    <thead><tr><th>کارمند</th><th>حقوق ثابت</th><th>پورسانت</th><th>جمع دریافتی</th><th>نوع پرداخت</th><th>وضعیت</th></tr></thead>
+    <tbody>
+    {% for name, p in payroll.items() %}
+    <tr>
+      <td><strong>{{ name }}</strong></td>
+      <td style="font-weight:600;color:var(--success)">{{ "{:,}".format(p.salary) }} تومان</td>
+      <td style="color:var(--warning)">{{ "{:,}".format(p.commission) }} تومان</td>
+      <td style="font-weight:600">{{ "{:,}".format(p.total) }} تومان</td>
+      <td>{{ p.pay_type }}</td>
+      <td>{{ p.status }}</td>
+    </tr>
+    {% endfor %}
+    {% if payroll %}
+    <tr style="background:var(--primary);color:#fff;font-weight:600">
+      <td>مجموع کل</td>
+      <td>{{ "{:,}".format(total_salary) }} تومان</td>
+      <td>{{ "{:,}".format(total_payroll - total_salary) }} تومان</td>
+      <td>{{ "{:,}".format(total_payroll) }} تومان</td>
+      <td></td><td></td>
+    </tr>
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+
 <!-- Charts -->
 {% if income_cats or expense_cats %}
 <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">

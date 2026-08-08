@@ -87,6 +87,10 @@
     <div class="label">📊 سود خالص ماه</div>
     <div class="value {% if month_profit >= 0 %}green{% else %}red{% endif %}">{{ "{:,}".format(month_profit) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
   </div>
+  <div class="box">
+    <div class="label">💼 مجموع حقوق ثابت ماه</div>
+    <div class="value" style="color:var(--primary)">{{ "{:,}".format(month_salary_total) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
 </div>
 
 <!-- ─── Charts ─── -->
