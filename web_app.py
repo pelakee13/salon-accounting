@@ -638,6 +638,8 @@ def submit_transaction():
         discount_amount = discount_value
 
     final_amount = max(0, subtotal - discount_amount)
+    # Deposit already paid earlier (reservation) -> subtract from final payable
+    payable_amount = max(0, final_amount - deposit)
 
     # Use points if selected
     points_used = 0
@@ -689,9 +691,12 @@ def submit_transaction():
         save_inventory(inventory)
 
     if payment_method == "نسیه":
-        flash(f"⚠️ فاکتور نسیه ثبت شد! مشتری: {customer} — مبلغ: {final_amount:,} تومان", "info")
+        flash(f"⚠️ فاکتور نسیه ثبت شد! مشتری: {customer} — مبلغ کل: {final_amount:,} تومان", "info")
     else:
-        flash(f"✅ تراکنش ثبت شد! مشتری: {customer} — مبلغ نهایی: {final_amount:,} تومان — پرداخت: {payment_summary}", "success")
+        if deposit > 0:
+            flash(f"✅ تراکنش ثبت شد! مشتری: {customer} — مبلغ کل: {final_amount:,} — بیعانه قبلی: {deposit:,} — مانده قابل پرداخت: {payable_amount:,} تومان — پرداخت: {payment_summary}", "success")
+        else:
+            flash(f"✅ تراکنش ثبت شد! مشتری: {customer} — مبلغ نهایی: {final_amount:,} تومان — پرداخت: {payment_summary}", "success")
 
     if tip > 0:
         flash(f"💰 انعام ثبت شد: {tip:,} تومان", "success")
@@ -719,6 +724,7 @@ def submit_transaction():
             "deposit": deposit,
             "payment_method": payment_summary,
             "final_amount": final_amount,
+            "payable_amount": payable_amount,
             "employee_commissions": emp_commissions,
         }, pdf_path)
         session["last_invoice"] = invoice_no

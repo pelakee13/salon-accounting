@@ -220,7 +220,7 @@
         <span>💳 بیعانه (تومان):</span>
         <input type="number" name="deposit" id="deposit_input" min="0" value="0" placeholder="0"
                style="max-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left"
-               oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+               oninput="this.value=this.value.replace(/[^0-9]/g,'');updateTotals()">
       </div>
     </div>
   </div>
@@ -430,6 +430,10 @@ function updateTotals(){
     finalAmount = Math.max(0, finalAmount - pointsUsed * 1000);
   }
   
+  // Deposit (already paid earlier) -> subtract from final payable
+  let deposit = parseInt(document.getElementById('deposit_input').value) || 0;
+  let payable = Math.max(0, finalAmount - deposit);
+  
   document.getElementById('subtotal_display').textContent = subtotal.toLocaleString();
   document.getElementById('total_comm_display').textContent = totalComm.toLocaleString();
   document.getElementById('discount_display').textContent = discountAmount.toLocaleString() + ' تومان';
@@ -437,7 +441,7 @@ function updateTotals(){
   document.getElementById('discount_line_val').textContent = discountAmount.toLocaleString();
   document.getElementById('points_line').style.display = pointsUsed > 0 ? 'block' : 'none';
   document.getElementById('points_line_val').textContent = pointsUsed;
-  document.getElementById('final_amount_display').innerHTML = finalAmount.toLocaleString() + ' <small style="font-size:14px;font-weight:400">تومان</small>';
+  document.getElementById('final_amount_display').innerHTML = payable.toLocaleString() + ' <small style="font-size:14px;font-weight:400">تومان</small>';
   
   updatePaymentBalance();
 }

@@ -124,7 +124,8 @@ def generate_invoice(invoice, filepath):
     if invoice.get("tip"):
         totals.append([Paragraph(_fa("انعام"), S["label"]), Paragraph(_fa(f"{int(invoice['tip']):,} تومان"), S["cell"])])
     if invoice.get("deposit"):
-        totals.append([Paragraph(_fa("بیعانه پرداختی"), S["label"]), Paragraph(_fa(f"{int(invoice['deposit']):,} تومان"), S["cell"])])
+        totals.append([Paragraph(_fa("بیعانه پرداخت‌شده (قبلی)"), S["label"]), Paragraph(_fa(f"{int(invoice['deposit']):,} تومان"), S["cell"])])
+        totals.append([Paragraph(_fa("مانده قابل پرداخت"), S["total"]), Paragraph(_fa(f"{int(invoice.get('payable_amount', invoice.get('final_amount',0))):,} تومان"), S["total"])])
     totals.append([Paragraph(_fa("روش پرداخت"), S["label"]), Paragraph(_fa(invoice.get("payment_method", "—")), S["cell"])])
     totals.append([Paragraph(_fa("مبلغ نهایی"), S["total"]), Paragraph(_fa(f"{int(invoice.get('final_amount',0)):,} تومان"), S["total"])])
     tt = Table(totals, colWidths=[40*mm, 108*mm])
