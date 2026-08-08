@@ -966,8 +966,9 @@ def monthly():
 
     # Payroll for this month
     payroll = employee_payroll(get_employees(), monthly_txns)
+    paid_salary = sum(e["amount"] for e in get_expenses(start_date=start, end_date=end) if e["category"] == "حقوق و دستمزد")
     total_salary = sum(p["salary"] for p in payroll.values())
-    total_payroll = sum(p["total"] for p in payroll.values())
+    total_payroll = sum(p["net"] for p in payroll.values())
 
     return render_template("monthly.html", month_str=month_str, months=months,
         emp_totals=dict(emp_totals), details=details,
@@ -989,7 +990,8 @@ def monthly():
         delta_income=_delta(grand_total, prev_summary["income"]),
         delta_expenses=_delta(total_expenses, prev_summary["expenses"]),
         delta_profit=_delta(grand_total - total_expenses, prev_summary["profit"]),
-        payroll=payroll, total_salary=total_salary, total_payroll=total_payroll)
+        payroll=payroll, total_salary=total_salary, total_payroll=total_payroll,
+        paid_salary=paid_salary)
 
 def _month_summary(y, m):
     """Compute income/expenses/profit for a given Jalali year/month."""
@@ -1167,6 +1169,9 @@ def profit_loss():
     for e in expenses:
         expense_cats[e["category"]] += e["amount"]
 
+    # Actual paid salary from expenses (recorded via "ثبت پرداخت حقوق")
+    paid_salary = sum(e["amount"] for e in expenses if e["category"] == "حقوق و دستمزد")
+
     # Income by service category
     income_cats = defaultdict(int)
     for t in txns:
@@ -1176,7 +1181,7 @@ def profit_loss():
     # Payroll for selected period
     payroll = employee_payroll(get_employees(), txns)
     total_salary = sum(p["salary"] for p in payroll.values())
-    total_payroll = sum(p["total"] for p in payroll.values())
+    total_payroll = sum(p["net"] for p in payroll.values())
 
     return render_template("profit_loss.html",
         title=title, period=period,
@@ -1186,7 +1191,8 @@ def profit_loss():
         net_profit=net_profit,
         expense_cats=dict(expense_cats), income_cats=dict(income_cats),
         txn_count=len(txns), expense_count=len(expenses),
-        payroll=payroll, total_salary=total_salary, total_payroll=total_payroll)
+        payroll=payroll, total_salary=total_salary, total_payroll=total_payroll,
+        paid_salary=paid_salary)
 
 # ─── Routes: Customer History ───
 @app.route("/customer/<name>")
@@ -1299,7 +1305,7 @@ def payroll_page():
         for mm in range(1, 13):
             months.append(f"{yy}/{mm:02d}")
     return render_template("payroll.html",
-        selected=selected, months=months,
+        months=months,
         payroll=pr, total_gross=total_gross, total_ded=total_ded, total_net=total_net, total_commission=total_commission,
         deductions_list=deductions_list,
         employee_transactions={e["name"]: [t for t in txns if t["employee"]==e["name"]] for e in emps})
@@ -1338,16 +1344,21 @@ def payroll_pay():
     if not active:
         flash("کارمند فعالی با حقوق ثابت وجود ندارد", "info")
         return redirect(url_for("employees_page"))
+    # Compute net per employee for the current month using real payroll
+    jy, jm, jd = PersianDate.gregorian_to_jalali(datetime.now().year, datetime.now().month, datetime.now().day)
+    month_str = f"{jy}/{jm:02d}"
+    start = f"{jy}/{jm:02d}/01"
+    end = f"{jy+1}/01/01" if jm == 12 else f"{jy}/{jm+1:02d}/01"
+    month_txns = get_transactions(start_date=start, end_date=end)
+    pr = employee_payroll(emps, month_txns, month=month_str)
     total = 0
     for e in active:
-        amt = e["salary"]
-        total += amt
-        note = f"پرداخت حقوق {e['name']} — {e.get('pay_type','ماهانه')}"
-        if e.get("deductions", 0) > 0:
-            note += f" | کسورات: {e['deductions']:,} تومان ({e.get('deduction_note','')})"
-        add_expense(today, "حقوق و دستمزد", amt, note, "نقدی", "ثبت خودکار از پرونده حقوق")
-    flash(f"✅ حقوق {len(active)} کارمند ثبت شد (مجموع {total:,} تومان)", "success")
-    return redirect(url_for("employees_page"))
+        net = pr[e["name"]]["net"]
+        total += net
+        note = f"پرداخت حقوق {e['name']} — {e.get('pay_type','ماهانه')} | حقوق: {e['salary']:,} + پورسانت: {pr[e['name']]['commission']:,} - کسورات: {pr[e['name']]['deductions']:,}"
+        add_expense(today, "حقوق و دستمزد", net, note, "نقدی", "ثبت خودکار از پرونده حقوق")
+    flash(f"✅ حقوق {len(active)} کارمند ثبت شد (مجموع خالص {total:,} تومان)", "success")
+    return redirect(url_for("payroll_page"))
 
 # ─── Routes: Services ───
 @app.route("/services", methods=["GET","POST"])

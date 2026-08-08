@@ -35,6 +35,7 @@
       <td>{{ v.status }}</td>
       <td>
         <button class="btn btn-sm btn-secondary" onclick="openDed('{{ name }}')">➕ کسورات</button>
+        <button class="btn btn-sm btn-primary" onclick="openSlip('{{ name }}')">📄 فیش</button>
         <a href="#emp-{{ loop.index }}" style="color:var(--primary);font-size:13px">مشاهده ▾</a>
       </td>
     </tr>
@@ -152,7 +153,47 @@
   {% endif %}
 </div>
 
+<div id="slipModal" class="modal-overlay">
+  <div class="modal-content" style="max-width:420px">
+    <h3 style="text-align:center">📄 فیش حقوقی</h3>
+    <div id="slipBody" style="font-size:14px;line-height:2"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ چاپ</button>
+      <button class="btn btn-secondary" onclick="closeSlip()">بستن</button>
+    </div>
+  </div>
+</div>
+
 <script>
+const PAYROLL = {
+{%- for name, v in payroll.items() %}
+  "{{ name }}": {
+    "salary": "{{ "{:,}".format(v.salary) }}",
+    "commission": "{{ "{:,}".format(v.commission) }}",
+    "ins_ded": "{{ "{:,}".format(v.ins_ded) }}",
+    "var_ded": "{{ "{:,}".format(v.var_ded) }}",
+    "net": "{{ "{:,}".format(v.net) }}",
+    "pay_type": "{{ v.pay_type }}"
+  }{% if not loop.last %},{% endif %}
+{%- endfor %}
+};
+const SELECTED_MONTH = "{{ selected }}";
+function openSlip(name){
+  const v = PAYROLL[name];
+  document.getElementById('slipBody').innerHTML = `
+    <div style="text-align:center;font-weight:700;font-size:16px;margin-bottom:10px">Heli Beauty Studio</div>
+    <div style="text-align:center;color:#666;margin-bottom:14px">فیش حقوقی — ${SELECTED_MONTH}</div>
+    <div style="display:flex;justify-content:space-between"><span>👤 کارمند:</span><strong>${name}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span>💰 حقوق ثابت:</span><strong>${v.salary} تومان</strong></div>
+    <div style="display:flex;justify-content:space-between"><span>📊 پورسانت:</span><strong>${v.commission} تومان</strong></div>
+    <div style="display:flex;justify-content:space-between"><span>🛡️ بیمه ثابت:</span><strong style="color:#d93025">${v.ins_ded} تومان</strong></div>
+    <div style="display:flex;justify-content:space-between"><span>➖ کسورات متغیر:</span><strong style="color:#d93025">${v.var_ded} تومان</strong></div>
+    <hr style="margin:10px 0">
+    <div style="display:flex;justify-content:space-between;font-size:15px"><span>✅ خالص دریافتی:</span><strong style="color:#1a7a3a">${v.net} تومان</strong></div>
+  `;
+  document.getElementById('slipModal').style.display='flex';
+}
+function closeSlip(){ document.getElementById('slipModal').style.display='none'; }
 function openDed(name){ document.querySelector('#dedModal select[name=employee]').value=name; document.getElementById('dedModal').style.display='flex'; }
 function closeDed(){ document.getElementById('dedModal').style.display='none'; }
 </script>

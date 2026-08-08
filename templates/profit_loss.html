@@ -61,6 +61,17 @@
   </div>
 </div>
 
+<div class="summary">
+  <div class="box">
+    <div class="label">💼 مجموع حقوق محاسبه‌شده (ماه)</div>
+    <div class="value" style="color:var(--primary)">{{ "{:,}".format(total_salary) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+  <div class="box">
+    <div class="label">✅ حقوق پرداخت‌شده (ثبت شده)</div>
+    <div class="value" style="color:var(--success)">{{ "{:,}".format(paid_salary) }}<br><small style="font-size:12px;font-weight:400">تومان</small></div>
+  </div>
+</div>
+
 <!-- Payroll -->
 <div class="card">
   <h2>💼 حقوق و دستمزد کارمندان</h2>
@@ -72,7 +83,7 @@
       <td><strong>{{ name }}</strong></td>
       <td style="font-weight:600;color:var(--success)">{{ "{:,}".format(p.salary) }} تومان</td>
       <td style="color:var(--warning)">{{ "{:,}".format(p.commission) }} تومان</td>
-      <td style="font-weight:600">{{ "{:,}".format(p.total) }} تومان</td>
+      <td style="font-weight:600">{{ "{:,}".format(p.net) }} تومان</td>
       <td>{{ p.pay_type }}</td>
       <td>{{ p.status }}</td>
     </tr>

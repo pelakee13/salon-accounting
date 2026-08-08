@@ -100,7 +100,7 @@
   <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:13px">
     <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">💰 حقوق ثابت: <strong>{{ "{:,}".format(pr.salary) }}</strong> تومان</span>
     <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">📊 پورسانت ماه: <strong>{{ "{:,}".format(pr.commission) }}</strong> تومان</span>
-    <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">✅ جمع پرداختی: <strong>{{ "{:,}".format(pr.total) }}</strong> تومان</span>
+    <span style="background:var(--primary-light);padding:6px 12px;border-radius:8px">✅ جمع پرداختی: <strong>{{ "{:,}".format(pr.net) }}</strong> تومان</span>
   </div>
   {% endif %}
   <table>
@@ -148,7 +148,7 @@
       <td><strong>{{ name }}</strong></td>
       <td style="font-weight:600;color:var(--success)">{{ "{:,}".format(p.salary) }} تومان</td>
       <td style="color:var(--warning)">{{ "{:,}".format(p.commission) }} تومان</td>
-      <td style="font-weight:600">{{ "{:,}".format(p.total) }} تومان</td>
+      <td style="font-weight:600">{{ "{:,}".format(p.net) }} تومان</td>
       <td>{{ p.pay_type }}</td>
       <td>{{ p.status }}</td>
     </tr>
