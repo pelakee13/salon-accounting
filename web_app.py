@@ -543,13 +543,21 @@ def dashboard():
     inventory = get_inventory()
     low_stock = [it for it in inventory if it["stock"] <= it["min_stock"]]
 
-    # Birthday alerts: customers whose birth date (MM/DD) matches today
+    # Birthday alerts: customers whose birth date (MM/DD) is today OR in 2 days
     today_md = today[5:]  # "MM/DD" portion of "YYYY/MM/DD"
+    # compute Jalali date for 2 days from now
+    d2 = datetime.now() + timedelta(days=2)
+    jy2, jm2, jd2 = PersianDate.gregorian_to_jalali(d2.year, d2.month, d2.day)
+    in2_md = f"{jm2:02d}/{jd2:02d}"
     birthday_customers = []
+    birthday_soon = []  # 2 days before birthday
     for c in get_customers():
         bd = c.get("birth_date", "")
-        if bd and len(bd) >= 5 and bd[5:] == today_md:
-            birthday_customers.append(c["name"])
+        if bd and len(bd) >= 5:
+            if bd[5:] == today_md:
+                birthday_customers.append(c["name"])
+            elif bd[5:] == in2_md:
+                birthday_soon.append(c["name"])
 
     # Service category breakdown for pie chart
     cat_totals = defaultdict(int)
@@ -567,7 +575,8 @@ def dashboard():
         low_stock=low_stock,
         cat_labels=json.dumps(list(cat_totals.keys()), ensure_ascii=False),
         cat_values=json.dumps(list(cat_totals.values())),
-        birthday_customers=birthday_customers
+        birthday_customers=birthday_customers,
+        birthday_soon=birthday_soon
     )
 
 # ─── Routes: Index ───

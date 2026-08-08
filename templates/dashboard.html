@@ -19,6 +19,23 @@
 </div>
 {% endif %}
 
+<!-- ─── Birthday Soon (2 days before) ─── -->
+{% if birthday_soon %}
+<div class="alert-banner" style="flex-wrap:wrap;gap:10px;background:rgba(129,199,132,0.12);border:1px solid rgba(129,199,132,0.4)">
+  <div class="count" style="background:#66bb6a">{{ birthday_soon|length }}</div>
+  <div>
+    <strong>📅 تولد ۲ روز دیگه (یادآوری):</strong>
+    <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
+      {% for name in birthday_soon %}
+      <span style="background:rgba(129,199,132,0.18);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;color:#2e7d32">
+        🎁 {{ name }}
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- ─── Low Stock Alerts ─── -->
 {% if low_stock %}
 <div class="alert-banner" style="flex-wrap:wrap;gap:10px">
