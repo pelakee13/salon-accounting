@@ -19,6 +19,10 @@ app.secret_key = "helia-beauty-salon-fixed-secret-key-2024"  # fixed for persist
 app.config["SESSION_COOKIE_NAME"] = "helia_session"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+# TEMPORARY: set True to disable login for testing (all pages public).
+# Set back to False to re-enable authentication.
+LOGIN_DISABLED = True
 # Secure flag set per-request in before_request (depends on scheme)
 
 # ─── CSRF Protection (session-based, no extra deps) ───
@@ -98,6 +102,13 @@ def reset_fails(ip):
 
 @app.before_request
 def require_login():
+    # TEMPORARY: when login disabled (for testing), allow all pages
+    if LOGIN_DISABLED:
+        # still set a default role so RBAC/templates don't break
+        if "role" not in session:
+            session["role"] = "admin"
+            session["user"] = "test"
+        return None
     # Set Secure cookie flag if served over HTTPS (tunnel)
     if request.scheme == "https":
         app.config["SESSION_COOKIE_SECURE"] = True
