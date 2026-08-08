@@ -160,7 +160,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <label style="font-weight:600;font-size:14px;color:var(--text)">💳 روش پرداخت</label>
         <div style="background:#e8f5e9;padding:6px 12px;border-radius:8px;font-size:13px">
-          <span style="color:var(--text-muted)">مبلغ کل:</span>
+          <span style="color:var(--text-muted)">مانده قابل پرداخت:</span>
           <strong style="color:var(--success);font-size:15px" id="payment_total_display">۰</strong>
           <span style="color:var(--text-muted)">تومان</span>
         </div>
@@ -580,7 +580,8 @@ function calculateFinalAmount(){
   let discountType = document.getElementById('discount_type').value;
   let discountVal = parseInt(document.getElementById('discount_value').value) || 0;
   let discountAmount = discountType === 'percent' ? Math.round(subtotal * discountVal / 100) : discountVal;
-  return Math.max(0, subtotal - discountAmount);
+  let deposit = parseInt(document.getElementById('deposit_input').value) || 0;
+  return Math.max(0, subtotal - discountAmount - deposit);
 }
 
 function clearAll(){
