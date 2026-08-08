@@ -4,14 +4,14 @@
 
 <div class="card">
   <table>
-    <thead><tr><th>نام</th><th>تخصص</th><th>تلفن</th><th>درصد سهم</th><th>حقوق ثابت</th><th>نوع پرداخت</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+    <thead><tr><th>نام</th><th>تخصص</th><th>تلفن</th><th>درصد سهم</th><th>حقوق ثابت</th><th>نوع پرداخت</th><th>کسورات</th><th>وضعیت</th><th>عملیات</th></tr></thead>
     <tbody>
     {% for e in employees %}
     <tr>
       <td><strong>{{ e.name }}</strong></td><td>{{ e.specialty }}</td><td>{{ e.phone }}</td><td>{{ e.share_percent }}%</td>
-      <td>{{ "{:,}".format(e.salary) }} تومان</td><td>{{ e.pay_type }}</td><td>{{ e.status }}</td>
+      <td>{{ "{:,}".format(e.salary) }} تومان</td><td>{{ e.pay_type }}</td><td>{{ "{:,}".format(e.deductions) }} تومان</td><td>{{ e.status }}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editEmp({{ loop.index0 }},'{{ e.name }}','{{ e.specialty }}','{{ e.phone }}',{{ e.share_percent }},{{ e.salary }},'{{ e.pay_type }}','{{ e.start_date }}','{{ e.status }}')">✏️</button>
+        <button class="btn btn-secondary btn-sm" style="min-width:40px;min-height:36px" onclick="editEmp({{ loop.index0 }},'{{ e.name }}','{{ e.specialty }}','{{ e.phone }}',{{ e.share_percent }},{{ e.salary }},'{{ e.pay_type }}','{{ e.start_date }}','{{ e.status }}',{{ e.deductions }},'{{ e.deduction_note }}')">✏️</button>
         <form method="POST" style="display:inline" onsubmit="return confirm('حذف {{ e.name }}؟')">
           <input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ loop.index0 }}">
           <button class="btn btn-danger btn-sm" style="min-width:40px;min-height:36px">❌</button>
@@ -46,6 +46,8 @@
       <label>تاریخ شروع همکاری</label><input type="text" name="start_date" id="f_start_date" placeholder="1404/01/01" style="direction:rtl;text-align:right">
       <label>وضعیت</label>
       <select name="status" id="f_status"><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
+      <label>کسورات / بیمه (تومان)</label><input type="number" name="deductions" id="f_deductions" value="0" min="0">
+      <label>توضیحات کسورات</label><input type="text" name="deduction_note" id="f_deduction_note" placeholder="مثلاً بیمه تامین اجتماعی ۳۰٪" style="direction:rtl;text-align:right">
       <div class="modal-actions">
         <button type="submit" class="btn btn-success">ذخیره</button>
         <button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button>
@@ -62,10 +64,11 @@ function openAdd(){
   document.getElementById('f_phone').value='';document.getElementById('f_share').value='0';
   document.getElementById('f_salary').value='0';document.getElementById('f_pay_type').value='ماهانه';
   document.getElementById('f_start_date').value='';document.getElementById('f_status').value='فعال';
+  document.getElementById('f_deductions').value='0';document.getElementById('f_deduction_note').value='';
   document.getElementById('f_idx').value='';
   document.getElementById('modal').style.display='flex';
 }
-function editEmp(i,name,spec,phone,share,salary,payType,startDate,status){
+function editEmp(i,name,spec,phone,share,salary,payType,startDate,status,deductions,deductionNote){
   document.getElementById('f_action').value='edit';
   document.getElementById('modal_title').textContent='ویرایش کارمند';
   document.getElementById('f_idx').value=i;
@@ -73,6 +76,7 @@ function editEmp(i,name,spec,phone,share,salary,payType,startDate,status){
   document.getElementById('f_phone').value=phone;document.getElementById('f_share').value=share;
   document.getElementById('f_salary').value=salary;document.getElementById('f_pay_type').value=payType;
   document.getElementById('f_start_date').value=startDate;document.getElementById('f_status').value=status;
+  document.getElementById('f_deductions').value=deductions;document.getElementById('f_deduction_note').value=deductionNote;
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){document.getElementById('modal').style.display='none';}

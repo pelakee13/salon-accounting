@@ -243,6 +243,7 @@
     {% if auth.role_can_access(session.get('role'), '/profit_loss') %}<a class="nav-item {% if request.endpoint == 'profit_loss' %}active{% endif %}" href="/profit_loss"><span class="ico">📈</span> سود و زیان</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/inventory') %}<a class="nav-item {% if request.endpoint == 'inventory_page' %}active{% endif %}" href="/inventory"><span class="ico">📦</span> انبار</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/employees') %}<a class="nav-item {% if request.endpoint == 'employees_page' %}active{% endif %}" href="/employees"><span class="ico">👥</span> کارمندان</a>{% endif %}
+    {% if auth.role_can_access(session.get('role'), '/payroll') %}<a class="nav-item {% if request.endpoint == 'payroll_page' %}active{% endif %}" href="/payroll"><span class="ico">💼</span> فیش حقوقی</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/services') %}<a class="nav-item {% if request.endpoint == 'services_page' %}active{% endif %}" href="/services"><span class="ico">🛎️</span> خدمات</a>{% endif %}
     <div class="nav-separator"></div>
     {% if auth.role_can_access(session.get('role'), '/backup') %}<a class="nav-item {% if request.endpoint == 'backup_page' %}active{% endif %}" href="/backup"><span class="ico">📦</span> بکاپ</a>{% endif %}

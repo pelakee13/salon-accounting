@@ -177,10 +177,10 @@ class PersianDate:
 
 # ─── Default Data ───
 DEFAULT_EMPLOYEES = [
-    {"name":"مریم","specialty":"مو","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
-    {"name":"زهرا","specialty":"ناخن","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
-    {"name":"سارا","specialty":"ابرو","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
-    {"name":"نیلوفر","specialty":"مژه","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال"},
+    {"name":"مریم","specialty":"مو","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال","deductions":0,"deduction_note":""},
+    {"name":"زهرا","specialty":"ناخن","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال","deductions":0,"deduction_note":""},
+    {"name":"سارا","specialty":"ابرو","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال","deductions":0,"deduction_note":""},
+    {"name":"نیلوفر","specialty":"مژه","phone":"","share_percent":0,"salary":0,"pay_type":"ماهانه","start_date":"","status":"فعال","deductions":0,"deduction_note":""},
 ]
 DEFAULT_SERVICES = [
     {"name":"رنگ مو","category":"مو","default_price":80000},
@@ -221,26 +221,20 @@ def _read_rows(fp):
     return [row for row in ws.iter_rows(min_row=2, values_only=True) if row[0]]
 
 def init_all():
-    _ensure_workbook(EMPLOYEES_FILE, ["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت"])
+    _ensure_workbook(EMPLOYEES_FILE, ["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت","کسورات","توضیحات کسورات"])
     ws = load_workbook(EMPLOYEES_FILE).active
     if ws.max_row <= 1:
         wb = load_workbook(EMPLOYEES_FILE); ws = wb.active
-        for e in DEFAULT_EMPLOYEES: ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e["salary"],e["pay_type"],e["start_date"],e["status"]])
+        for e in DEFAULT_EMPLOYEES: ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e["salary"],e["pay_type"],e["start_date"],e["status"],e["deductions"],e["deduction_note"]])
         wb.save(EMPLOYEES_FILE)
     # Migration: ensure new employee columns exist (for pre-existing files)
     if os.path.exists(EMPLOYEES_FILE):
         wb = load_workbook(EMPLOYEES_FILE); ws = wb.active
-        want = ["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت"]
-        # rewrite header if shorter than 8 cols
-        if ws.max_column < 8:
-            # shift: append missing columns with defaults
+        want = ["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت","کسورات","توضیحات کسورات"]
+        if ws.max_column < 10:
             for r in range(2, ws.max_row + 1):
-                name = str(ws.cell(row=r, column=1).value or "")
-                # keep existing 4 fields, default new ones
-                ws.cell(row=r, column=5, value=0)
-                ws.cell(row=r, column=6, value="ماهانه")
-                ws.cell(row=r, column=7, value="")
-                ws.cell(row=r, column=8, value="فعال")
+                ws.cell(row=r, column=9, value=0)
+                ws.cell(row=r, column=10, value="")
             for c, h in enumerate(want, 1):
                 ws.cell(row=1, column=c, value=h).font = HDR_FONT
                 ws.cell(row=1, column=c).fill = PINK
@@ -303,23 +297,24 @@ def get_employees():
             "pay_type":str(r[5] or "ماهانه"),
             "start_date":str(r[6] or ""),
             "status":str(r[7] or "فعال"),
+            "deductions":int(r[8] or 0),
+            "deduction_note":str(r[9] or ""),
         })
     return result
 
 def save_employees(emps):
     wb = Workbook(); ws = wb.active; ws.title = "داده‌ها"
-    for c, h in enumerate(["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت"], 1):
+    for c, h in enumerate(["نام","تخصص","تلفن","درصد سهم","حقوق ثابت","نوع پرداخت","تاریخ شروع","وضعیت","کسورات","توضیحات کسورات"], 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
     for e in emps:
-        ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e.get("salary",0),e.get("pay_type","ماهانه"),e.get("start_date",""),e.get("status","فعال")])
+        ws.append([e["name"],e["specialty"],e["phone"],e["share_percent"],e.get("salary",0),e.get("pay_type","ماهانه"),e.get("start_date",""),e.get("status","فعال"),e.get("deductions",0),e.get("deduction_note","")])
     wb.save(EMPLOYEES_FILE)
 
 def employee_payroll(employees, monthly_txns):
     """محاسبه حقوق و دستمزد کارمندان برای تراکنش‌های یک ماه.
-    returns: {emp_name: {salary, commission, total, pay_type, status}}
+    returns: {emp_name: {salary, commission, deductions, deduction_note, net, gross, pay_type, status}}
     """
     emp_shares = {e["name"]: e["share_percent"] for e in employees}
-    # commission per employee this month
     comm_by_emp = defaultdict(int)
     for t in monthly_txns:
         c = t.get("commission", int(t["amount"]*emp_shares.get(t["employee"],0)/100))
@@ -329,10 +324,16 @@ def employee_payroll(employees, monthly_txns):
         name = e["name"]
         salary = e.get("salary", 0)
         commission = comm_by_emp.get(name, 0)
+        deductions = e.get("deductions", 0)
+        gross = salary + commission
+        net = gross - deductions
         result[name] = {
             "salary": salary,
             "commission": commission,
-            "total": salary + commission,
+            "deductions": deductions,
+            "deduction_note": e.get("deduction_note", ""),
+            "gross": gross,
+            "net": net,
             "pay_type": e.get("pay_type", "ماهانه"),
             "status": e.get("status", "فعال"),
         }
@@ -1212,7 +1213,9 @@ def employees_page():
                 "salary":int(request.form.get("salary","0") or 0),
                 "pay_type":request.form.get("pay_type","ماهانه"),
                 "start_date":request.form.get("start_date",""),
-                "status":request.form.get("status","فعال")}
+                "status":request.form.get("status","فعال"),
+                "deductions":int(request.form.get("deductions","0") or 0),
+                "deduction_note":request.form.get("deduction_note","")}
         if action == "add":
             emps.append(base)
         elif action == "edit":
@@ -1222,6 +1225,37 @@ def employees_page():
         save_employees(emps)
         return redirect(url_for("employees_page"))
     return render_template("employees.html", employees=get_employees())
+
+@app.route("/payroll")
+@login_required
+def payroll_page():
+    # Month selector (Jalali)
+    now = datetime.now()
+    jy, jm, jd = PersianDate.gregorian_to_jalali(now.year, now.month, now.day)
+    selected = request.args.get("month", f"{jy}/{jm:02d}")
+    try:
+        sy, sm = map(int, selected.split("/"))
+    except:
+        sy, sm = jy, jm
+    # month range
+    start = f"{sy}/{sm:02d}/01"
+    end = f"{sy+1}/01/01" if sm == 12 else f"{sy}/{sm+1:02d}/01"
+    txns = get_transactions(start_date=start, end_date=end)
+    emps = get_employees()
+    pr = employee_payroll(emps, txns)
+    total_gross = sum(v["gross"] for v in pr.values())
+    total_ded = sum(v["deductions"] for v in pr.values())
+    total_net = sum(v["net"] for v in pr.values())
+    total_commission = sum(v["commission"] for v in pr.values())
+    # month list for selector
+    months = []
+    for yy in range(jy-1, jy+1):
+        for mm in range(1, 13):
+            months.append(f"{yy}/{mm:02d}")
+    return render_template("payroll.html",
+        selected=selected, months=months,
+        payroll=pr, total_gross=total_gross, total_ded=total_ded, total_net=total_net, total_commission=total_commission,
+        employee_transactions={e["name"]: [t for t in txns if t["employee"]==e["name"]] for e in emps})
 
 @app.route("/payroll/pay", methods=["POST"])
 @login_required
@@ -1236,7 +1270,10 @@ def payroll_pay():
     for e in active:
         amt = e["salary"]
         total += amt
-        add_expense(today, "حقوق و دستمزد", amt, f"پرداخت حقوق {e['name']} — {e.get('pay_type','ماهانه')}", "نقدی", "ثبت خودکار از پرونده حقوق")
+        note = f"پرداخت حقوق {e['name']} — {e.get('pay_type','ماهانه')}"
+        if e.get("deductions", 0) > 0:
+            note += f" | کسورات: {e['deductions']:,} تومان ({e.get('deduction_note','')})"
+        add_expense(today, "حقوق و دستمزد", amt, note, "نقدی", "ثبت خودکار از پرونده حقوق")
     flash(f"✅ حقوق {len(active)} کارمند ثبت شد (مجموع {total:,} تومان)", "success")
     return redirect(url_for("employees_page"))
 
