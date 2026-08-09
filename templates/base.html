@@ -233,8 +233,8 @@
     </div>
   </div>
   <nav class="sidebar-nav">
-    {% if auth.role_can_access(session.get('role'), '/') %}<a class="nav-item {% if request.endpoint in ['index','submit_transaction'] %}active{% endif %}" href="/"><span class="ico">💰</span> ثبت خدمات</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/customers') %}<a class="nav-item {% if request.endpoint == 'customers_page' %}active{% endif %}" href="/customers"><span class="ico">📒</span> مشتریان</a>{% endif %}
+    {% if auth.role_can_access(session.get('role'), '/') %}<a class="nav-item {% if request.endpoint in ['index','submit_transaction'] %}active{% endif %}" href="/"><span class="ico">💰</span> ثبت خدمات</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/dashboard') %}<a class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}" href="/dashboard"><span class="ico">🏠</span> داشبورد</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/reports') %}<a class="nav-item {% if request.endpoint == 'reports' %}active{% endif %}" href="/reports"><span class="ico">📊</span> گزارش امروز</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/monthly') %}<a class="nav-item {% if request.endpoint == 'monthly' %}active{% endif %}" href="/monthly"><span class="ico">📅</span> ماهانه</a>{% endif %}
