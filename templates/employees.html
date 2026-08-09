@@ -43,7 +43,7 @@
       <label>حقوق ثابت ماهانه (تومان)</label><input type="number" name="salary" id="f_salary" value="0" min="0">
       <label>نوع پرداخت حقوق</label>
       <select name="pay_type" id="f_pay_type"><option value="ماهانه">ماهانه</option><option value="روزانه">روزانه</option><option value="ساعتی">ساعتی</option></select>
-      <label>تاریخ شروع همکاری</label><input type="text" name="start_date" id="f_start_date" placeholder="1404/01/01" style="direction:rtl;text-align:right">
+      <label>تاریخ شروع همکاری</label><input type="text" name="start_date" id="f_start_date" placeholder="1404/01/01" oninput="formatJalali(this)" style="direction:rtl;text-align:right">
       <label>وضعیت</label>
       <select name="status" id="f_status"><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
       <label>کسورات / بیمه (تومان)</label><input type="number" name="deductions" id="f_deductions" value="0" min="0">
@@ -57,6 +57,15 @@
 </div>
 
 <script>
+function formatJalali(el){
+  let d = el.value.replace(/[^0-9]/g,'');
+  if(d.length > 8) d = d.slice(0,8);
+  let y = d.slice(0,4), m = d.slice(4,6), day = d.slice(6,8);
+  let out = y;
+  if(d.length >= 5) out += '/' + m.padStart(2,'0');
+  if(d.length >= 7) out += '/' + day.padStart(2,'0');
+  el.value = out;
+}
 function openAdd(){
   document.getElementById('f_action').value='add';
   document.getElementById('modal_title').textContent='افزودن کارمند';

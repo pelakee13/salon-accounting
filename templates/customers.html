@@ -57,7 +57,7 @@
       <label>تخصص مورد علاقه</label>
       <select name="specialty" id="f_specialty"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option><option>رنگ</option><option>شینیون</option></select>
       <label>تعداد مراجعه</label><input type="number" name="visits" id="f_visits" value="0">
-      <label>تاریخ تولد (شمسی YYYY/MM/DD)</label><input name="birth_date" id="f_birth" placeholder="1375/03/21">
+      <label>تاریخ تولد (شمسی YYYY/MM/DD)</label><input name="birth_date" id="f_birth" placeholder="1375/03/21" oninput="formatJalali(this)">
       <label>یادداشت</label><input name="note" id="f_note">
       <div class="modal-actions">
         <button type="submit" class="btn btn-success">ذخیره</button>
@@ -69,6 +69,15 @@
 
 <script>
 const custs = {{ customers | tojson }};
+function formatJalali(el){
+  let d = el.value.replace(/[^0-9]/g,'');
+  if(d.length > 8) d = d.slice(0,8);
+  let y = d.slice(0,4), m = d.slice(4,6), day = d.slice(6,8);
+  let out = y;
+  if(d.length >= 5) out += '/' + m.padStart(2,'0');
+  if(d.length >= 7) out += '/' + day.padStart(2,'0');
+  el.value = out;
+}
 function openAdd(){
   document.getElementById('f_action').value='add';
   document.getElementById('modal_title').textContent='افزودن مشتری';
