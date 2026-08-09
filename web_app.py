@@ -1068,10 +1068,10 @@ def expenses_page():
 def inventory_page():
     if request.method == "POST":
         action = request.form.get("action")
-        if action == "add_item":
+        if action in ("add", "add_item"):
             name = request.form.get("name", "").strip()
             unit = request.form.get("unit", "عدد")
-            stock = int(request.form.get("stock", 0) or 0)
+            stock = int(request.form.get("initial_stock", 0) or 0)
             min_stock = int(request.form.get("min_stock", 0) or 0)
             unit_price = int(request.form.get("unit_price", 0) or 0)
             if name:
