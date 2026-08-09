@@ -1305,7 +1305,7 @@ def payroll_page():
         for mm in range(1, 13):
             months.append(f"{yy}/{mm:02d}")
     return render_template("payroll.html",
-        months=months,
+        selected=selected, months=months,
         payroll=pr, total_gross=total_gross, total_ded=total_ded, total_net=total_net, total_commission=total_commission,
         deductions_list=deductions_list,
         employee_transactions={e["name"]: [t for t in txns if t["employee"]==e["name"]] for e in emps})
