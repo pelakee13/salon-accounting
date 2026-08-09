@@ -1317,9 +1317,12 @@ def payroll_add_deduction():
     dtype = request.form.get("dtype", "سایر")
     amount = int(request.form.get("amount", 0) or 0)
     month = request.form.get("month", "")
+    if not month:
+        jy, jm, jd = PersianDate.gregorian_to_jalali(datetime.now().year, datetime.now().month, datetime.now().day)
+        month = f"{jy}/{jm:02d}"
     note = request.form.get("note", "")
     today = PersianDate.today_str()
-    if emp and amount > 0 and month:
+    if emp and amount > 0:
         add_deduction(emp, dtype, amount, today, month, note)
         flash(f"✅ کسورات «{dtype}» برای {emp} ثبت شد ({amount:,} تومان)", "success")
     else:
