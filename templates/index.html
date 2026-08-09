@@ -136,7 +136,7 @@
         </div>
         <div class="field" style="max-width:160px">
           <label>تاریخ واریز</label>
-          <input type="text" name="deposit_date" id="deposit_date" placeholder="۱۴۰۵/۰۵/۱۶"
+          <input type="text" name="deposit_date" id="deposit_date" placeholder="۱۴۰۵/۰۵/۱۶" oninput="formatJalali(this)"
                  style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:left;direction:rtl">
         </div>
         <div class="field" style="max-width:150px">
@@ -293,6 +293,15 @@
 </style>
 
 <script>
+function formatJalali(el){
+  let raw = el.value.replace(/[^0-9]/g,'');
+  if(raw.length > 8) raw = raw.slice(0,8);
+  let out = raw;
+  if(raw.length >= 5) out = raw.slice(0,4) + '/' + raw.slice(4,6);
+  if(raw.length >= 7) out = raw.slice(0,4) + '/' + raw.slice(4,6) + '/' + raw.slice(6,8);
+  el.value = out;
+  el.setSelectionRange(out.length, out.length);
+}
 let customersData = [];
 let items = [];
 let customerPoints = 0;
