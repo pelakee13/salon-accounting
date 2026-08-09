@@ -70,13 +70,15 @@
 <script>
 const custs = {{ customers | tojson }};
 function formatJalali(el){
-  let d = el.value.replace(/[^0-9]/g,'');
-  if(d.length > 8) d = d.slice(0,8);
-  let y = d.slice(0,4), m = d.slice(4,6), day = d.slice(6,8);
-  let out = y;
-  if(d.length >= 5) out += '/' + m.padStart(2,'0');
-  if(d.length >= 7) out += '/' + day.padStart(2,'0');
+  let cursor = el.selectionStart;
+  let raw = el.value.replace(/[^0-9]/g,'');
+  if(raw.length > 8) raw = raw.slice(0,8);
+  let out = raw;
+  if(raw.length >= 5) out = raw.slice(0,4) + '/' + raw.slice(4,6);
+  if(raw.length >= 7) out = raw.slice(0,4) + '/' + raw.slice(4,6) + '/' + raw.slice(6,8);
   el.value = out;
+  // keep caret at end (simplest for RTL date entry)
+  el.setSelectionRange(out.length, out.length);
 }
 function openAdd(){
   document.getElementById('f_action').value='add';
