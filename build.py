@@ -16,7 +16,7 @@ def main():
         sys.executable, "-m", "PyInstaller",
         "--name", "HeliBeautyStudio",
         "--onefile",
-        "--windowed" if sys.platform.startswith("win") else "--console",  # GUI on Windows, console on macOS/Linux
+        "--console",  # show console so errors are visible (remove after stable)
         "--add-data", os.path.join(HERE, "templates") + os.pathsep + "templates",
     ]
     # Only bundle static/ if it exists (some setups have no static folder)

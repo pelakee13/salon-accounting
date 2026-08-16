@@ -40,6 +40,18 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 LOGIN_DISABLED = False
 # Secure flag set per-request in before_request (depends on scheme)
 
+# ─── Error logging (so EXE builds can be debugged via app_error.log) ───
+import traceback as _tb
+@app.errorhandler(500)
+def _log_500(e):
+    try:
+        with open(os.path.join(BASE_DIR, "app_error.log"), "a", encoding="utf-8") as f:
+            f.write("\n=== 500 at %s ===\n" % PersianDate.today_str())
+            f.write(_tb.format_exc())
+    except Exception:
+        pass
+    return "Internal Server Error - details saved to app_error.log", 500
+
 # ─── CSRF Protection (session-based, no extra deps) ───
 def generate_csrf_token():
     if "csrf_token" not in session:
