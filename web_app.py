@@ -24,7 +24,11 @@ def _base_dir():
     return os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = _base_dir()
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates") if getattr(_sys, "frozen", False) else "templates"
-STATIC_DIR = os.path.join(BASE_DIR, "static") if getattr(_sys, "frozen", False) else "static"
+# Only set a static folder if it actually exists (avoids 500 when frozen without a static/ dir)
+if getattr(_sys, "frozen", False):
+    STATIC_DIR = os.path.join(BASE_DIR, "static") if os.path.isdir(os.path.join(BASE_DIR, "static")) else None
+else:
+    STATIC_DIR = "static" if os.path.isdir("static") else None
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = "helia-beauty-salon-fixed-secret-key-2024"  # fixed for persistent sessions
