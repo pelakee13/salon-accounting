@@ -22,6 +22,9 @@ def main():
     # Only bundle static/ if it exists (some setups have no static folder)
     if os.path.isdir(os.path.join(HERE, "static")):
         cmd += ["--add-data", os.path.join(HERE, "static") + os.pathsep + "static"]
+    # Always bundle fonts/ (needed by invoice_pdf.py for Persian PDF rendering)
+    if os.path.isdir(os.path.join(HERE, "fonts")):
+        cmd += ["--add-data", os.path.join(HERE, "fonts") + os.pathsep + "fonts"]
     cmd += [
         "--hidden-import", "web_app",
         "--hidden-import", "auth",

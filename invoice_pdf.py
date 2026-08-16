@@ -16,7 +16,15 @@ from reportlab.pdfbase.ttfonts import TTFont
 import arabic_reshaper
 from bidi.algorithm import get_display
 
-FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "Vazirmatn.ttf")
+import sys as _sys
+def _font_path():
+    # When frozen by PyInstaller, data files live in the _MEIPASS temp dir.
+    if getattr(_sys, "frozen", False):
+        base = getattr(_sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, "fonts", "Vazirmatn.ttf")
+FONT_PATH = _font_path()
 
 # Register font once
 _pdf_font_registered = False
