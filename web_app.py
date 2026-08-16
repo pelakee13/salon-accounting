@@ -44,10 +44,17 @@ LOGIN_DISABLED = False
 import traceback as _tb
 @app.errorhandler(500)
 def _log_500(e):
+    tb = _tb.format_exc()
     try:
         with open(os.path.join(BASE_DIR, "app_error.log"), "a", encoding="utf-8") as f:
             f.write("\n=== 500 at %s ===\n" % PersianDate.today_str())
-            f.write(_tb.format_exc())
+            f.write(tb)
+    except Exception:
+        pass
+    # Also print to console so it is visible in the EXE window
+    try:
+        print("!!! 500 ERROR !!!")
+        print(tb)
     except Exception:
         pass
     return "Internal Server Error - details saved to app_error.log", 500
