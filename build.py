@@ -18,7 +18,11 @@ def main():
         "--onefile",
         "--windowed" if sys.platform.startswith("win") else "--console",  # GUI on Windows, console on macOS/Linux
         "--add-data", os.path.join(HERE, "templates") + os.pathsep + "templates",
-        "--add-data", os.path.join(HERE, "static") + os.pathsep + "static",
+    ]
+    # Only bundle static/ if it exists (some setups have no static folder)
+    if os.path.isdir(os.path.join(HERE, "static")):
+        cmd += ["--add-data", os.path.join(HERE, "static") + os.pathsep + "static"]
+    cmd += [
         "--hidden-import", "web_app",
         "--hidden-import", "auth",
         "--hidden-import", "openpyxl",
