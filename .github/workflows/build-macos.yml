@@ -1,0 +1,39 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:   # run manually from the Actions tab
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build macOS app with PyInstaller
+        run: python build.py
+
+      - name: Make app executable + strip quarantine
+        run: |
+          chmod +x dist/HeliBeautyStudio
+          xattr -cr dist/HeliBeautyStudio 2>/dev/null || true
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HeliBeautyStudio-macOS
+          path: dist/HeliBeautyStudio

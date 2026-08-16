@@ -16,7 +16,7 @@ def main():
         sys.executable, "-m", "PyInstaller",
         "--name", "HeliBeautyStudio",
         "--onefile",
-        "--windowed",          # no console window on Windows (GUI-like)
+        "--windowed" if sys.platform.startswith("win") else "--console",  # GUI on Windows, console on macOS/Linux
         "--add-data", os.path.join(HERE, "templates") + os.pathsep + "templates",
         "--add-data", os.path.join(HERE, "static") + os.pathsep + "static",
         "--hidden-import", "web_app",
