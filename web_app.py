@@ -1422,6 +1422,17 @@ def backup_page():
                 fp = create_backup_excel(txns, f"backup_monthly_{jy}_{jm:02d}.xlsx")
                 flash(f"✅ بکاپ ماهانه! ({len(txns)} تراکنش)","success")
             else: flash("تراکنشی برای این ماه نیست","info")
+        elif action == "zip":
+            import zipfile as _zip
+            stamp = PersianDate.today_str().replace("/", "-")
+            zpath = os.path.join(BASE_DIR, f"backup_full_{stamp}.zip")
+            with _zip.ZipFile(zpath, "w", _zip.ZIP_DEFLATED) as z:
+                for root, _, files in os.walk(DATA_DIR):
+                    for fl in files:
+                        fp = os.path.join(root, fl)
+                        z.write(fp, os.path.relpath(fp, BASE_DIR))
+            from flask import send_file
+            return send_file(zpath, as_attachment=True, download_name=f"heli_backup_{stamp}.zip")
         elif action == "full":
             if all_txns:
                 fp = create_backup_excel(all_txns, f"backup_full_{today.replace('/','-')}.xlsx")
