@@ -14,15 +14,26 @@ import invoice_pdf
 # login_required is provided by auth module
 login_required = auth.login_required
 
-app = Flask(__name__)
+# ─── Portable paths (work both as script and as PyInstaller EXE) ───
+import sys as _sys
+def _base_dir():
+    # When frozen by PyInstaller, keep data next to the executable so it
+    # persists and is easy to back up / migrate to a server later.
+    if getattr(_sys, "frozen", False):
+        return os.path.dirname(_sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = _base_dir()
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates") if getattr(_sys, "frozen", False) else "templates"
+STATIC_DIR = os.path.join(BASE_DIR, "static") if getattr(_sys, "frozen", False) else "static"
+
+app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = "helia-beauty-salon-fixed-secret-key-2024"  # fixed for persistent sessions
 app.config["SESSION_COOKIE_NAME"] = "helia_session"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-# TEMPORARY: set True to disable login for testing (all pages public).
-# Set back to False to re-enable authentication.
-LOGIN_DISABLED = True
+# Login is ENABLED by default. Set True only for quick local testing.
+LOGIN_DISABLED = False
 # Secure flag set per-request in before_request (depends on scheme)
 
 # ─── CSRF Protection (session-based, no extra deps) ───
@@ -55,7 +66,7 @@ def csrf_required(f):
 
 # ─── Rate Limiting (simple, SQLite-backed) ───
 import sqlite3 as _sql
-_RATE_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ratelimit.db")
+_RATE_DB = os.path.join(BASE_DIR, "data", "ratelimit.db")
 def _rate_get_conn():
     conn = _sql.connect(_RATE_DB)
     conn.execute("""CREATE TABLE IF NOT EXISTS login_attempts (
@@ -129,8 +140,8 @@ def require_login():
         return redirect(url_for("dashboard"))
     return None
 
-# ─── Data Directory ───
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+# ─── Data Directory (portable: next to exe when frozen) ───
+DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 EMPLOYEES_FILE = os.path.join(DATA_DIR, "employees.xlsx")
 SERVICES_FILE = os.path.join(DATA_DIR, "services.xlsx")

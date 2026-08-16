@@ -11,7 +11,12 @@ from functools import wraps
 from flask import session, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "users.db")
+import sys as _sys
+def _auth_base():
+    if getattr(_sys, "frozen", False):
+        return os.path.dirname(_sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(_auth_base(), "data", "users.db")
 
 ROLES = {
     "admin": "مالک / مدیر",
