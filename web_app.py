@@ -314,8 +314,8 @@ def init_all():
             ws.cell(row=1, column=5, value="تاریخ تولد").font = HDR_FONT
             ws.cell(row=1, column=5).fill = PINK
             wb.save(CUSTOMERS_FILE)
-    # Authentication system (SQLite users.db)
-    auth.init_auth()
+    # NOTE: auth.init_auth() is called at module import time below, so it runs
+    # under both `run.py` and Gunicorn (which imports web_app:app directly).
 
 # ─── Data Access: Employees ───
 def get_employees():
@@ -1547,6 +1547,15 @@ def api_calculate_commission():
         salon_share = amount - commission
         return jsonify({"commission": commission, "salon_share": salon_share, "percent": emp["share_percent"]})
     return jsonify({"commission": 0, "salon_share": amount, "percent": 0})
+
+# Initialize auth DB (create users table + default admin) at import time so it
+# works under Gunicorn (which imports web_app:app directly, not run.py).
+try:
+    auth.init_auth()
+except Exception as _e:
+    import traceback as _tb
+    print("init_auth failed:", _e)
+    _tb.print_exc()
 
 # ─── Run ───
 if __name__ == "__main__":
