@@ -2,6 +2,18 @@
 {% block content %}
 <h1 class="page-title">📒 دفترچه مشتریان</h1>
 
+{% if birthday_today %}
+<div class="card" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:2px solid #ffb74d">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:34px">🎂</span>
+    <div>
+      <div style="font-weight:800;font-size:18px;color:#e65100">تبریک تولد!</div>
+      <div style="color:#bf360c">امروز تولد {% for n in birthday_today %}<b>{{ n }}</b>{% if not loop.last %}، {% endif %}{% endfor %} عزیزه 🎉</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Search & Export -->
 <div class="card">
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">

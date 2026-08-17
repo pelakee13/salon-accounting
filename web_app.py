@@ -1267,7 +1267,11 @@ def customers_page():
     custs = get_customers()
     if query:
         custs = [c for c in custs if query in c["name"].lower() or query in c["phone"] or query in c["specialty"].lower()]
-    return render_template("customers.html", customers=custs, query=query)
+    # Birthday customers (today, Jalali)
+    today_j = PersianDate.today_str()  # YYYY/MM/DD
+    tj = today_j.split("/")
+    birthday_today = [c["name"] for c in custs if c.get("birth_date","") and c["birth_date"].split("/")[-2:] == tj[1:]]
+    return render_template("customers.html", customers=custs, query=query, birthday_today=birthday_today)
 
 @app.route("/customers/export")
 def export_customers():
