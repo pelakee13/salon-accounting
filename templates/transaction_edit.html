@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">✏️ ویرایش فاکتور</h1>
+
+<div class="card">
+  <form method="POST">
+    <input type="hidden" name="action" value="save">
+    <input type="hidden" name="idx" value="{{ idx }}">
+
+    <label>نام مشتری</label>
+    <input name="customer" value="{{ t.customer }}" required>
+
+    <label>نام خدمت</label>
+    <input name="service" value="{{ t.service }}" required>
+
+    <label>کارمند</label>
+    <select name="employee">
+      <option value="">---</option>
+      {% for e in employees %}<option value="{{ e.name }}" {% if e.name == t.employee %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+
+    <label>مبلغ خالص (تومان)</label>
+    <input type="number" name="amount" value="{{ t.amount }}">
+
+    <label>تخفیف (تومان)</label>
+    <input type="number" name="discount" value="{{ t.discount or 0 }}">
+
+    <label>مبلغ نهایی (تومان)</label>
+    <input type="number" name="final_amount" value="{{ t.final_amount or t.amount }}">
+
+    <label>روش پرداخت</label>
+    <select name="payment_method">
+      {% for m in ['نقدی','کارتی','انتقال','امانی'] %}<option value="{{ m }}" {% if m == t.payment_method %}selected{% endif %}>{{ m }}</option>{% endfor %}
+    </select>
+
+    <label>یادداشت</label>
+    <input name="note" value="{{ t.note or '' }}">
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button type="submit" class="btn btn-success">💾 ذخیره تغییرات</button>
+      <a href="/reports" class="btn btn-secondary">لغو</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

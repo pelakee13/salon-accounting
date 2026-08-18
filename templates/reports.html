@@ -29,10 +29,24 @@
 
 <div class="card">
   <table>
-    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th></tr></thead>
+    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th><th>عملیات</th></tr></thead>
     <tbody>
-    {% for t in transactions %}
-    <tr><td>{{ t.date }}</td><td>{{ t.customer }}</td><td>{{ t.service }}</td><td>{{ t.category or '—' }}</td><td>{{ t.employee }}</td><td style="font-weight:600">{{ "{:,}".format(t.amount) }}</td></tr>
+    {% for idx, t in transactions %}
+    <tr>
+      <td>{{ t.date }}</td>
+      <td>{{ t.customer }}</td>
+      <td>{{ t.service }}</td>
+      <td>{{ t.category or '—' }}</td>
+      <td>{{ t.employee }}</td>
+      <td style="font-weight:600">{{ "{:,}".format(t.amount) }}</td>
+      <td style="white-space:nowrap">
+        <a href="/transaction/edit?idx={{ idx }}" class="btn btn-secondary btn-sm">✏️</a>
+        <form method="POST" action="/transaction/delete" style="display:inline" onsubmit="return confirm('حذف این فاکتور؟')">
+          <input type="hidden" name="idx" value="{{ idx }}">
+          <button class="btn btn-danger btn-sm">🗑️</button>
+        </form>
+      </td>
+    </tr>
     {% endfor %}
     </tbody>
   </table>

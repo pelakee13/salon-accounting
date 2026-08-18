@@ -922,9 +922,66 @@ def reports():
     total = sum(t.get("final_amount", t["amount"]) for t in txns)
     customers_count = len(set(t["customer"] for t in txns))
     tips = sum(t.get("tip", 0) for t in txns)
-    return render_template("reports.html", transactions=list(reversed(txns)),
+    # attach original index (in full transactions list) for edit/delete
+    all_list = get_transactions()
+    indexed = []
+    for t in reversed(txns):
+        # find its index in the full list (last match by identity of dict)
+        idx = all_list.index(t) if t in all_list else -1
+        indexed.append((idx, t))
+    return render_template("reports.html", transactions=indexed,
         total=total, customers=customers_count, services_count=len(txns),
         tips=tips, today=today, employees=emps, selected_emp=emp_filter)
+
+# ─── Routes: Transaction delete / edit ───
+@app.route("/transaction/delete", methods=["POST"])
+@login_required
+@csrf_required
+def transaction_delete():
+    idx = int(request.form.get("idx", -1))
+    if idx >= 0:
+        delete_transaction(idx)
+        flash("🗑️ فاکتور حذف شد", "info")
+    return redirect(request.referrer or url_for("reports"))
+
+@app.route("/transaction/edit", methods=["GET","POST"])
+@login_required
+@csrf_required
+def transaction_edit():
+    idx = int(request.args.get("idx", request.form.get("idx", -1)))
+    txns = get_transactions()
+    if idx < 0 or idx >= len(txns):
+        flash("فاکتور مورد نظر یافت نشد", "error")
+        return redirect(url_for("reports"))
+    t = txns[idx]
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "save":
+            t["customer"] = request.form.get("customer", t["customer"])
+            t["service"] = request.form.get("service", t["service"])
+            t["employee"] = request.form.get("employee", t["employee"])
+            t["amount"] = int(request.form.get("amount", 0) or 0)
+            t["discount"] = int(request.form.get("discount", 0) or 0)
+            t["final_amount"] = int(request.form.get("final_amount", 0) or 0)
+            t["payment_method"] = request.form.get("payment_method", "نقدی")
+            t["note"] = request.form.get("note", "")
+            txns[idx] = t
+            _save_all_transactions(txns)
+            flash("✅ فاکتور ویرایش شد", "success")
+            return redirect(url_for("reports"))
+    emps = get_employees()
+    return render_template("transaction_edit.html", t=t, idx=idx, employees=emps)
+
+def _save_all_transactions(txns):
+    wb = Workbook(); ws = wb.active; ws.title = "داده‌ها"
+    for c, h in enumerate(["تاریخ","نام مشتری","نام خدمت","دسته‌بندی","نام کارمند",
+        "مبلغ خالص","تخفیف","مبلغ نهایی","روش پرداخت","پورسانت کارمند","سهم سالن","یادداشت","انعام"], 1):
+        cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
+    for t in txns:
+        ws.append([t.get("date",""),t.get("customer",""),t.get("service",""),t.get("category",""),
+            t.get("employee",""),t.get("amount",0),t.get("discount",0),t.get("final_amount",t.get("amount",0)),
+            t.get("payment_method","نقدی"),t.get("commission",0),t.get("salon_share",0),t.get("note",""),t.get("tip",0)])
+    wb.save(TRANSACTIONS_FILE)
 
 # ─── Routes: Monthly ───
 @app.route("/monthly", methods=["GET","POST"])
