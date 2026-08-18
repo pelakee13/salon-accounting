@@ -1068,7 +1068,14 @@ def monthly():
     total_salary = sum(p["salary"] for p in payroll.values())
     total_payroll = sum(p["net"] for p in payroll.values())
 
+    # attach original index for edit/delete
+    all_list = get_transactions()
+    indexed_txns = []
+    for t in monthly_txns:
+        idx = all_list.index(t) if t in all_list else -1
+        indexed_txns.append((idx, t))
     return render_template("monthly.html", month_str=month_str, months=months,
+        monthly_txns=indexed_txns,
         emp_totals=dict(emp_totals), details=details,
         grand_total=grand_total, grand_comm=grand_comm, grand_tips=grand_tips,
         total_count=len(monthly_txns),
