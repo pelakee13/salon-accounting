@@ -1,4 +1,4 @@
-# Heli Beauty Studio — سالن زیبایی هلیا
+# پلاک ۱۳ (Pelakee13) — سالن زیبایی پلاک ۱۳
 
 سیستم مدیریت سالن زیبایی (مشتریان، خدمات، کارمندان، فیش حقوقی، انبار، هزینه‌ها، سود و زیان).
 برنامه‌ای با پایتون (Flask) که هم به صورت **اپلیکیشن دسکتاپ** (ویندوز/مک) و هم به صورت **وب‌اپ** (روی سرور) قابل اجراست.
@@ -18,8 +18,8 @@
 ۱. بروید به گیت‌هاب پروژه → تب **Actions**
 ۲. روی **Build Windows EXE** (یا **Build macOS App**) کلیک کنید → **Run workflow**
 ۳. بعد از اتمام (~۳ دقیقه)، از بخش **Artifacts** فایل را دانلود کنید:
-   - ویندوز: `HeliBeautyStudio.exe`
-   - مک: `HeliBeautyStudio`
+   - ویندوز: `Pelakee13Studio.exe`
+   - مک: `Pelakee13Studio`
 ۴. فایل را اجرا کنید → مرورگر به طور خودکار باز می‌شود (`http://localhost:5000`).
 ۵. برای بستن، پنجره ترمینال را ببندید.
 
@@ -27,7 +27,7 @@
 ```bash
 pip install -r requirements.txt pyinstaller
 python build.py
-# خروجی: dist/HeliBeautyStudio.exe  (ویندوز) یا  dist/HeliBeautyStudio  (مک)
+# خروجی: dist/Pelakee13Studio.exe  (ویندوز) یا  dist/Pelakee13Studio  (مک)
 ```
 
 ### روش ج — اجرای مستقیم (بدون بسته‌بندی)
