@@ -1338,10 +1338,19 @@ def customers_page():
     custs = get_customers()
     if query:
         custs = [c for c in custs if query in c["name"].lower() or query in c["phone"] or query in c["specialty"].lower()]
-    # Birthday customers (today, Jalali)
-    today_j = PersianDate.today_str()  # YYYY/MM/DD
+    # Birthday customers: today OR within 2 days (Jalali)
+    from datetime import timedelta as _td
+    today_j = PersianDate.today_str()
     tj = today_j.split("/")
-    birthday_today = [c["name"] for c in custs if c.get("birth_date","") and c["birth_date"].split("/")[-2:] == tj[1:]]
+    d2 = datetime.now() + _td(days=2)
+    jy2, jm2, jd2 = PersianDate.gregorian_to_jalali(d2.year, d2.month, d2.day)
+    in2_md = f"{jm2:02d}/{jd2:02d}"
+    birthday_today = []
+    for c in custs:
+        bd = c.get("birth_date", "")
+        if bd and len(bd) >= 5:
+            if bd[5:] == today_j[5:] or bd[5:] == in2_md:
+                birthday_today.append(c["name"])
     return render_template("customers.html", customers=custs, query=query, birthday_today=birthday_today)
 
 @app.route("/customers/export")
