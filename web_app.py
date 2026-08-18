@@ -159,8 +159,13 @@ def require_login():
     role = session.get("role")
     path = request.path
     if not auth.role_can_access(role, path):
+        # Avoid redirect loop: send to first page the role CAN access
+        if path in ("/dashboard",):  # already there but no access -> go to first allowed
+            first_allowed = next((r for r in ["/", "/customers", "/reports", "/login"] if auth.role_can_access(role, r)), "/login")
+            return redirect(first_allowed)
         flash("شما دسترسی لازم برای این بخش را ندارید", "error")
-        return redirect(url_for("dashboard"))
+        first_allowed = next((r for r in ["/customers", "/", "/reports", "/dashboard"] if auth.role_can_access(role, r)), "/login")
+        return redirect(first_allowed)
     return None
 
 # ─── Data Directory (portable: next to exe when frozen) ───
@@ -578,8 +583,10 @@ def login():
         if user:
             auth.login_user(user)
             reset_fails(ip)
-            flash(f"خوش‌آمدید {user['name']} ({auth.ROLES.get(user['role'], user['role'])})", "success")
-            return redirect(url_for("dashboard"))
+            flash(f"خوش‌آمدید {user['name']} ({auth.ROLES.get(user['role'], user['role'])}", "success")
+            # Redirect to the first page the role is allowed to access (avoid loop for reception/employee)
+            first_allowed = next((r for r in ["/", "/customers", "/dashboard", "/reports"] if auth.role_can_access(user["role"], r)), "/login")
+            return redirect(first_allowed)
         register_fail(ip)
         flash("نام کاربری یا رمز عبور اشتباه است", "error")
     # If already logged in, go to dashboard
