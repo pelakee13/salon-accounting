@@ -173,6 +173,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 EMPLOYEES_FILE = os.path.join(DATA_DIR, "employees.xlsx")
 SERVICES_FILE = os.path.join(DATA_DIR, "services.xlsx")
+CATEGORIES_FILE = os.path.join(DATA_DIR, "categories.xlsx")
 TRANSACTIONS_FILE = os.path.join(DATA_DIR, "transactions.xlsx")
 CUSTOMERS_FILE = os.path.join(DATA_DIR, "customers.xlsx")
 EXPENSES_FILE = os.path.join(DATA_DIR, "expenses.xlsx")
@@ -424,6 +425,34 @@ def delete_deduction(idx):
         wb.save(DED_FILE)
 
 # ─── Data Access: Services ───
+def get_categories():
+    # Categories are stored in categories.xlsx; fallback: derive from services
+    if os.path.exists(CATEGORIES_FILE):
+        rows = _read_rows(CATEGORIES_FILE)
+        cats = [str(r[0]) for r in rows if r[0]]
+        if cats:
+            return cats
+    seen = []
+    for svc in get_services():
+        c = svc.get("category","")
+        if c and c not in seen:
+            seen.append(c)
+    return seen
+
+def save_categories(cats):
+    cats = [c for c in cats if c.strip()]
+    # keep unique preserving order
+    seen = []; out = []
+    for c in cats:
+        if c not in seen:
+            seen.append(c); out.append(c)
+    wb = Workbook(); ws = wb.active; ws.title = "دستهبندیها"
+    cell = ws.cell(row=1, column=1, value="نام دسته"); cell.font = HDR_FONT; cell.fill = PINK
+    for i, c in enumerate(out, start=2):
+        ws.cell(row=i, column=1, value=c)
+    ws.column_dimensions["A"].width = 24
+    wb.save(CATEGORIES_FILE)
+
 def get_services():
     rows = _read_rows(SERVICES_FILE)
     return [{"name":str(r[0]),"category":str(r[1] or ""),"default_price":int(r[2] or 0)} for r in rows]
@@ -1498,9 +1527,29 @@ def services_page():
             svcs[int(request.form["idx"])] = {"name":request.form["name"],"category":request.form.get("category",""),"default_price":int(request.form.get("price","0") or 0)}
         elif action == "delete":
             svcs.pop(int(request.form["idx"]))
-        save_services(svcs)
+        elif action == "cat_add":
+            cname = request.form.get("cat_name","").strip()
+            if cname:
+                cats = get_categories()
+                if cname not in cats:
+                    cats.append(cname)
+                    save_categories(cats)
+                    flash(f"✅ دسته «{cname}» اضافه شد", "success")
+        elif action == "cat_delete":
+            cname = request.form.get("cat_name","")
+            cats = get_categories()
+            used = any(svc.get("category","") == cname for svc in svcs)
+            if used:
+                flash(f"⚠️ دسته «{cname}» در استفاده است؛ اول خدمات آن دسته را تغییر دهید", "error")
+            elif cname in cats:
+                cats.remove(cname)
+                save_categories(cats)
+                flash(f"🗑️ دسته «{cname}» حذف شد", "info")
+        if action in ("add","edit","delete"):
+            save_services(svcs)
+            # keep categories file in sync if new category typed (not via select)
         return redirect(url_for("services_page"))
-    return render_template("services.html", services=get_services())
+    return render_template("services.html", services=get_services(), categories=get_categories())
 
 # ─── Routes: Backup ───
 @app.route("/backup", methods=["GET","POST"])

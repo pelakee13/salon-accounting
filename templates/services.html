@@ -2,9 +2,33 @@
 {% block content %}
 <h1 class="page-title">🛎️ مدیریت خدمات</h1>
 
+<!-- ─── Category management ─── -->
+<div class="card">
+  <h2 style="font-size:16px;margin-bottom:10px">🗂️ دستهبندیها</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+    {% for c in categories %}
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--primary-light);border:1px solid var(--primary);border-radius:50px;padding:6px 12px;font-size:13px">
+      {{ c }}
+      <form method="POST" style="display:inline" onsubmit="return confirm('حذف دسته «{{ c }}»؟')">
+        <input type="hidden" name="action" value="cat_delete">
+        <input type="hidden" name="cat_name" value="{{ c }}">
+        <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;padding:0" title="حذف دسته">✖</button>
+      </form>
+    </span>
+    {% endfor %}
+    {% if not categories %}<span style="color:var(--text-muted);font-size:13px">دستهای تعریف نشده</span>{% endif %}
+  </div>
+  <form method="POST" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input type="hidden" name="action" value="cat_add">
+    <input name="cat_name" placeholder="نام دسته جدید (مثلاً صورت)" required style="max-width:240px">
+    <button type="submit" class="btn btn-primary btn-sm">➕ افزودن دسته</button>
+  </form>
+</div>
+
+<!-- ─── Services table ─── -->
 <div class="card">
   <table>
-    <thead><tr><th>نام خدمت</th><th>دسته‌بندی</th><th>قیمت پیش‌فرض</th><th>عملیات</th></tr></thead>
+    <thead><tr><th>نام خدمت</th><th>دستهبندی</th><th>قیمت پیشفرض</th><th>عملیات</th></tr></thead>
     <tbody>
     {% for s in services %}
     <tr>
@@ -32,9 +56,12 @@
       <input type="hidden" name="action" id="f_action" value="add">
       <input type="hidden" name="idx" id="f_idx" value="">
       <label>نام خدمت *</label><input name="name" id="f_name" required>
-      <label>دسته‌بندی</label>
-      <select name="category" id="f_category"><option value="">---</option><option>مو</option><option>ناخن</option><option>ابرو</option><option>مژه</option><option>صورت</option></select>
-      <label>قیمت پیش‌فرض (تومان)</label><input type="number" name="price" id="f_price" min="0">
+      <label>دستهبندی</label>
+      <select name="category" id="f_category">
+        <option value="">---</option>
+        {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select>
+      <label>قیمت پیشفرض (تومان)</label><input type="number" name="price" id="f_price" min="0">
       <div class="modal-actions">
         <button type="submit" class="btn btn-success">ذخیره</button>
         <button type="button" class="btn btn-secondary" onclick="closeModal()">لغو</button>

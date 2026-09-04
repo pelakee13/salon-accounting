@@ -1,0 +1,19 @@
+
+=== 500 at 1405/06/13 ===
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/usr/lib/python3.13/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/data/data/com.termux/files/usr/lib/python3.13/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/data/data/com.termux/files/usr/lib/python3.13/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/data/data/com.termux/files/usr/lib/python3.13/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/home/salon-accounting/web_app.py", line 1552, in services_page
+    return render_template("services.html", services=get_services(), categories=get_categories())
+                                                                                ~~~~~~~~~~~~~~^^
+  File "/data/data/com.termux/files/home/salon-accounting/web_app.py", line 432, in get_categories
+    cats = [r.get("name","") for r in rows if r.get("name","")]
+                                              ^^^^^
+AttributeError: 'tuple' object has no attribute 'get'
