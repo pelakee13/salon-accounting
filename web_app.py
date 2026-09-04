@@ -1377,6 +1377,13 @@ def employees_page():
     if request.method == "POST":
         action = request.form.get("action")
         emps = get_employees()
+        if action == "delete":
+            idx = int(request.form.get("idx", -1))
+            if 0 <= idx < len(emps):
+                removed = emps.pop(idx)
+                save_employees(emps)
+                flash(f"🗑️ کارمند {removed.get('name','')} حذف شد", "info")
+            return redirect(url_for("employees_page"))
         base = {"name":request.form["name"],"specialty":request.form.get("specialty",""),"phone":request.form.get("phone",""),
                 "share_percent":float(request.form.get("share","0") or 0),
                 "salary":int(request.form.get("salary","0") or 0),
@@ -1389,8 +1396,6 @@ def employees_page():
             emps.append(base)
         elif action == "edit":
             emps[int(request.form["idx"])] = base
-        elif action == "delete":
-            emps.pop(int(request.form["idx"]))
         save_employees(emps)
         return redirect(url_for("employees_page"))
     return render_template("employees.html", employees=get_employees())
