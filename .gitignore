@@ -18,3 +18,4 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+app_error.log
