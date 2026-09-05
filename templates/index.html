@@ -48,20 +48,22 @@
 <div class="card">
   <h2>🛎️ خدمات انجام شده</h2>
   <div class="form-row">
-    <div class="field">
+    <div class="field" style="flex:2;min-width:200px">
       <label>خدمت</label>
-      <input type="text" id="svc_search" placeholder="🔍 جستجوی خدمت..." autocomplete="off" style="margin-bottom:6px" oninput="filterSelect('svc_search','svc_select')">
-      <select id="svc_select" size="5" onchange="fillPrice()">
-        {% for s in services %}<option value="{{ s.name }}" data-price="{{ s.default_price }}">{{ s.name }} — {{ "{:,}".format(s.default_price) }} تومان</option>{% endfor %}
-      </select>
+      <input type="text" id="svc_search" placeholder="🔍 جستجوی خدمت..." autocomplete="off" oninput="searchService(this.value)" onfocus="searchService(this.value)">
+      <div id="svc_results" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:#fff"></div>
     </div>
-    <div class="field">
+    <div class="field" style="flex:2;min-width:200px">
       <label>کارمند</label>
-      <input type="text" id="emp_search" placeholder="🔍 جستجوی کارمند..." autocomplete="off" style="margin-bottom:6px" oninput="filterSelect('emp_search','emp_select')">
-      <select id="emp_select" size="5" onchange="updateCommissionPreview()">
-        {% for e in employees %}<option value="{{ e.name }}" data-share="{{ e.share_percent }}">{{ e.name }} ({{ e.specialty }})</option>{% endfor %}
-      </select>
+      <input type="text" id="emp_search" placeholder="🔍 جستجوی کارمند..." autocomplete="off" oninput="searchEmployee(this.value)" onfocus="searchEmployee(this.value)">
+      <div id="emp_results" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:#fff"></div>
     </div>
+    <select id="svc_select" onchange="fillPrice()" style="display:none">
+      {% for s in services %}<option value="{{ s.name }}" data-price="{{ s.default_price }}">{{ s.name }} — {{ "{:,}".format(s.default_price) }} تومان</option>{% endfor %}
+    </select>
+    <select id="emp_select" onchange="updateCommissionPreview()" style="display:none">
+      {% for e in employees %}<option value="{{ e.name }}" data-share="{{ e.share_percent }}">{{ e.name }} ({{ e.specialty }})</option>{% endfor %}
+    </select>
     <div class="field" style="max-width:180px">
       <label>مبلغ (تومان)</label>
       <input type="number" id="amt_input" min="0" placeholder="0" oninput="updateCommissionPreview()">
@@ -343,6 +345,72 @@ function selectCustomer(name, phone, points){
   customerPoints = points || 0;
   document.getElementById('customer_points').value = customerPoints.toLocaleString();
   document.getElementById('search_results').style.display = 'none';
+}
+
+// ─── Service & employee search (same UX as customer search) ───
+let servicesData = [];
+{% for s in services %}servicesData.push({name:"{{ s.name }}", price:{{ s.default_price }}});{% endfor %}
+let employeesData = [];
+{% for e in employees %}employeesData.push({name:"{{ e.name }}", specialty:"{{ e.specialty }}", share:{{ e.share_percent }}});{% endfor %}
+
+let selectedService = '';
+let selectedEmployee = '';
+
+function searchService(q){
+  q = (q||'').trim();
+  const box = document.getElementById('svc_results');
+  let matches;
+  if(!q){
+    matches = servicesData.slice(0, 10);
+  } else {
+    matches = servicesData.filter(s => s.name.includes(q)).slice(0, 10);
+  }
+  if(!matches.length){ box.style.display='none'; return; }
+  box.innerHTML = matches.map(s =>
+    `<div onclick="pickService('${encodeURIComponent(s.name)}',${s.price})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background='#fff'">
+      <strong>${s.name}</strong> ${s.price?`<span style='color:var(--text-muted);font-size:11px'>(${s.price.toLocaleString()} تومان)</span>`:''}
+    </div>`
+  ).join('');
+  box.style.display='block';
+}
+
+function pickService(name, price){
+  name = decodeURIComponent(name);
+  selectedService = name;
+  document.getElementById('svc_search').value = name;
+  const sel = document.getElementById('svc_select');
+  if([...sel.options].some(o => o.value === name)){ sel.value = name; }
+  document.getElementById('svc_results').style.display = 'none';
+  document.getElementById('amt_input').value = price || 0;
+  updateCommissionPreview();
+}
+
+function searchEmployee(q){
+  q = (q||'').trim();
+  const box = document.getElementById('emp_results');
+  let matches;
+  if(!q){
+    matches = employeesData.slice(0, 10);
+  } else {
+    matches = employeesData.filter(e => (e.name && e.name.includes(q)) || (e.specialty && e.specialty.includes(q))).slice(0, 10);
+  }
+  if(!matches.length){ box.style.display='none'; return; }
+  box.innerHTML = matches.map(e =>
+    `<div onclick="pickEmployee('${encodeURIComponent(e.name)}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background='#fff'">
+      <strong>${e.name}</strong> ${e.specialty?`<span style='color:var(--text-muted);font-size:11px'>(${e.specialty})</span>`:''}
+    </div>`
+  ).join('');
+  box.style.display='block';
+}
+
+function pickEmployee(name){
+  name = decodeURIComponent(name);
+  selectedEmployee = name;
+  document.getElementById('emp_search').value = name;
+  const sel = document.getElementById('emp_select');
+  if([...sel.options].some(o => o.value === name)){ sel.value = name; }
+  document.getElementById('emp_results').style.display = 'none';
+  updateCommissionPreview();
 }
 
 // ─── New customer modal ───
