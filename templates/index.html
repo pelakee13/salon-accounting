@@ -50,13 +50,15 @@
   <div class="form-row">
     <div class="field">
       <label>خدمت</label>
-      <select id="svc_select" onchange="fillPrice()">
+      <input type="text" id="svc_search" placeholder="🔍 جستجوی خدمت..." autocomplete="off" style="margin-bottom:6px" oninput="filterSelect('svc_search','svc_select')">
+      <select id="svc_select" size="5" onchange="fillPrice()">
         {% for s in services %}<option value="{{ s.name }}" data-price="{{ s.default_price }}">{{ s.name }} — {{ "{:,}".format(s.default_price) }} تومان</option>{% endfor %}
       </select>
     </div>
     <div class="field">
       <label>کارمند</label>
-      <select id="emp_select" onchange="updateCommissionPreview()">
+      <input type="text" id="emp_search" placeholder="🔍 جستجوی کارمند..." autocomplete="off" style="margin-bottom:6px" oninput="filterSelect('emp_search','emp_select')">
+      <select id="emp_select" size="5" onchange="updateCommissionPreview()">
         {% for e in employees %}<option value="{{ e.name }}" data-share="{{ e.share_percent }}">{{ e.name }} ({{ e.specialty }})</option>{% endfor %}
       </select>
     </div>
@@ -413,6 +415,20 @@ function removeItem(i){
   items.splice(i,1);
   renderItems();
   updateTotals();
+}
+
+function filterSelect(inputId, selectId){
+  const query = document.getElementById(inputId).value.trim().toLowerCase();
+  const sel = document.getElementById(selectId);
+  Array.from(sel.options).forEach(opt => {
+    const text = opt.textContent.toLowerCase();
+    opt.hidden = query && !text.includes(query);
+  });
+  // auto-select first visible match
+  const firstVisible = Array.from(sel.options).find(o => !o.hidden);
+  if(query && firstVisible){ sel.value = firstVisible.value; }
+  if(selectId === 'svc_select'){ fillPrice(); }
+  else { updateCommissionPreview(); }
 }
 
 function renderItems(){
