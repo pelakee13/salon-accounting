@@ -770,8 +770,28 @@ def dashboard():
 @app.route("/")
 @login_required
 def index():
+    edit_indices = request.args.get("edit", "").strip()
+    edit_txns = []
+    edit_data = {}
+    if edit_indices:
+        all_txns = get_transactions()
+        for i in edit_indices.split(","):
+            i = int(i.strip())
+            if 0 <= i < len(all_txns):
+                edit_txns.append(all_txns[i])
+        if edit_txns:
+            edit_data = {
+                "indices": edit_indices,
+                "customer": edit_txns[0].get("customer", ""),
+                "phone": edit_txns[0].get("phone", ""),
+                "payment_method": edit_txns[0].get("payment_method", "نقدی"),
+                "items_json": json.dumps([{
+                    "service": t.get("service", ""), "employee": t.get("employee", ""),
+                    "amount": t.get("amount", 0), "commission": t.get("commission", 0)
+                } for t in edit_txns], ensure_ascii=False)
+            }
     return render_template("index.html", today=PersianDate.today_str(),
-        services=get_services(), employees=get_employees())
+        services=get_services(), employees=get_employees(), edit_data=edit_data)
 
 @login_required
 @app.route("/submit_transaction", methods=["POST"])
@@ -798,11 +818,22 @@ def submit_transaction():
         payment_summary = payment_method
     send_sms = data.get("send_sms", "")
     use_points = data.get("use_points", "")
+    edit_indices = data.get("edit_indices", "").strip()
 
     if not customer:
         flash("لطفاً نام مشتری را وارد کنید", "error"); return redirect(url_for("index"))
     if not services:
         flash("حداقل یک خدمت اضافه کنید", "error"); return redirect(url_for("index"))
+
+    # ─── Edit mode: delete old transactions first ───
+    if edit_indices:
+        all_txns = get_transactions()
+        indices_to_delete = sorted([int(i.strip()) for i in edit_indices.split(",") if i.strip().isdigit()], reverse=True)
+        for idx in indices_to_delete:
+            if 0 <= idx < len(all_txns):
+                all_txns.pop(idx)
+        _save_all_transactions(all_txns)
+        flash("🔄 فاکتور قبلی حذف شد — در حال ذخیره فاکتور جدید", "info")
 
     today = PersianDate.today_str()
     emps = get_employees()
@@ -951,14 +982,21 @@ def reports():
     total = sum(t.get("final_amount", t["amount"]) for t in txns)
     customers_count = len(set(t["customer"] for t in txns))
     tips = sum(t.get("tip", 0) for t in txns)
-    # attach original index (in full transactions list) for edit/delete
-    all_list = get_transactions()
-    indexed = []
-    for t in reversed(txns):
-        # find its index in the full list (last match by identity of dict)
-        idx = all_list.index(t) if t in all_list else -1
-        indexed.append((idx, t))
-    return render_template("reports.html", transactions=indexed,
+    # Group transactions into invoices by (date, customer, payment_method)
+    from collections import OrderedDict
+    invoice_groups = OrderedDict()
+    for t in txns:
+        idx = all_txns.index(t) if t in all_txns else -1
+        key = (t["date"], t["customer"], t.get("payment_method", "نقدی"))
+        if key not in invoice_groups:
+            invoice_groups[key] = {"rows": [], "indices": [], "total": 0,
+                "customer": t["customer"], "payment_method": t.get("payment_method", "نقدی"),
+                "date": t["date"]}
+        invoice_groups[key]["rows"].append(t)
+        invoice_groups[key]["indices"].append(idx)
+        invoice_groups[key]["total"] += t.get("final_amount", t["amount"])
+    invoices = list(invoice_groups.values())
+    return render_template("reports.html", invoices=invoices, transactions=[],
         total=total, customers=customers_count, services_count=len(txns),
         tips=tips, today=today, employees=emps, selected_emp=emp_filter)
 
@@ -971,6 +1009,21 @@ def transaction_delete():
     if idx >= 0:
         delete_transaction(idx)
         flash("🗑️ فاکتور حذف شد", "info")
+    return redirect(request.referrer or url_for("reports"))
+
+@app.route("/transaction/delete_invoice", methods=["POST"])
+@login_required
+@csrf_required
+def transaction_delete_invoice():
+    indices_str = request.form.get("indices", "")
+    if indices_str:
+        all_txns = get_transactions()
+        indices = sorted([int(i.strip()) for i in indices_str.split(",") if i.strip().isdigit()], reverse=True)
+        for idx in indices:
+            if 0 <= idx < len(all_txns):
+                all_txns.pop(idx)
+        _save_all_transactions(all_txns)
+        flash(f"🗑️ فاکتور ({len(indices)} ردیف) حذف شد", "info")
     return redirect(request.referrer or url_for("reports"))
 
 @app.route("/transaction/edit", methods=["GET","POST"])

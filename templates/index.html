@@ -17,6 +17,7 @@
 {% endwith %}
 
 <form method="POST" action="/submit_transaction" id="invoiceForm" onsubmit="return validateInvoice()">
+<input type="hidden" name="edit_indices" id="edit_indices" value="{{ edit_data.get('indices', '') if edit_data else '' }}">
 
 <!-- ─── Customer Section ─── -->
 <div class="card">
@@ -729,6 +730,32 @@ function validateInvoice(){
   }
   return true;
 }
+
+// ─── Edit mode: pre-fill form from existing invoice ───
+{% if edit_data and edit_data.items_json %}
+(function(){
+  var editData = {{ edit_data.items_json|safe }};
+  var editCustomer = "{{ edit_data.customer|default('') }}";
+  var editPhone = "{{ edit_data.phone|default('') }}";
+  var editPayment = "{{ edit_data.payment_method|default('نقدی') }}";
+  // Pre-fill customer
+  if(editCustomer){
+    document.getElementById('customer_search').value = editCustomer;
+    document.getElementById('customer_name_hidden').value = editCustomer;
+  }
+  if(editPhone){ document.getElementById('customer_phone').value = editPhone; }
+  // Pre-fill items
+  items = [];
+  editData.forEach(function(it){
+    items.push({service: it.service, employee: it.employee, amount: it.amount, commission: it.commission});
+  });
+  renderItems();
+  updateTotals();
+  // Highlight edit mode
+  var title = document.querySelector('.page-title');
+  if(title){ title.innerHTML = '✏️ ویرایش فاکتور — ' + title.innerHTML; }
+})();
+{% endif %}
 
 fillPrice();
 </script>
