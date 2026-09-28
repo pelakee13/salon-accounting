@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">💳 دریافتنی‌ها (تسویه نشده)</h1>
+
+<div class="summary">
+  <div class="box"><div class="label">💰 جمع کل بدهی</div><div class="value" style="color:#d9534f">{{ "{:,}".format(grand_total) }} <small style="font-size:12px;font-weight:400">تومان</small></div></div>
+  <div class="box"><div class="label">👥 تعداد مشتری بدهکار</div><div class="value">{{ receivables|length }}</div></div>
+</div>
+
+{% for r in receivables %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div>
+      <strong style="font-size:15px">👤 {{ r.customer }}</strong>
+      <span style="color:var(--text-muted);font-size:12px;margin-right:8px">قدیمی‌ترین فاکتور: {{ r.oldest }}</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <strong style="color:#d9534f;font-size:15px">{{ "{:,}".format(r.total) }} تومان</strong>
+      <form method="POST" action="/receivables/settle" style="display:inline" onsubmit="return confirm('تسویه شد؟')">
+        <input type="hidden" name="indices" value="{{ r.indices|join(',') }}">
+        <button class="btn btn-success btn-sm">✅ تسویه شد</button>
+      </form>
+    </div>
+  </div>
+  <table style="width:100%;font-size:13px">
+    <thead><tr><th>تاریخ</th><th>خدمت</th><th>کارمند</th><th>مبلغ</th></tr></thead>
+    <tbody>
+    {% for item in r.rows %}
+    <tr>
+      <td>{{ item.date }}</td>
+      <td>{{ item.service }}</td>
+      <td>{{ item.employee }}</td>
+      <td style="font-weight:600">{{ "{:,}".format(item.final_amount) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% if not receivables %}
+<div class="card"><div class="empty">✅ هیچ بدهی تسویه‌نشده‌ای وجود ندارد</div></div>
+{% endif %}
+{% endblock %}

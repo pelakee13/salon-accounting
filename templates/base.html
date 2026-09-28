@@ -237,6 +237,7 @@
     {% if auth.role_can_access(session.get('role'), '/') %}<a class="nav-item {% if request.endpoint in ['index','submit_transaction'] %}active{% endif %}" href="/"><span class="ico">💰</span> ثبت خدمات</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/dashboard') %}<a class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}" href="/dashboard"><span class="ico">🏠</span> داشبورد</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/reports') %}<a class="nav-item {% if request.endpoint == 'reports' %}active{% endif %}" href="/reports"><span class="ico">📊</span> گزارش امروز</a>{% endif %}
+    {% if auth.role_can_access(session.get('role'), '/receivables') %}<a class="nav-item {% if request.endpoint == 'receivables' %}active{% endif %}" href="/receivables"><span class="ico">💳</span> دریافتنی‌ها</a>{% endif %}
     {% if auth.role_can_access(session.get('role'), '/monthly') %}<a class="nav-item {% if request.endpoint == 'monthly' %}active{% endif %}" href="/monthly"><span class="ico">📅</span> ماهانه</a>{% endif %}
     <div class="nav-separator"></div>
     {% if auth.role_can_access(session.get('role'), '/expenses') %}<a class="nav-item {% if request.endpoint == 'expenses_page' %}active{% endif %}" href="/expenses"><span class="ico">💸</span> هزینه‌ها</a>{% endif %}

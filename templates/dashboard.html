@@ -36,6 +36,18 @@
 </div>
 {% endif %}
 
+<!-- ─── Receivables Alert ─── -->
+{% if receivable_total and receivable_total > 0 %}
+<div class="alert-banner" style="flex-wrap:wrap;gap:10px;background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.35)">
+  <div class="count" style="background:#e57373">💳</div>
+  <div>
+    <strong>💰 بدهی تسویه‌نشده:</strong>
+    <span style="color:#c62828;font-weight:700;font-size:15px;margin-right:8px">{{ "{:,}".format(receivable_total) }} تومان</span>
+    <a href="/receivables" style="font-size:12px;margin-right:8px;color:#c62828;text-decoration:underline">مشاهده دریافتنی‌ها →</a>
+  </div>
+</div>
+{% endif %}
+
 <!-- ─── Low Stock Alerts ─── -->
 {% if low_stock %}
 <div class="alert-banner" style="flex-wrap:wrap;gap:10px">

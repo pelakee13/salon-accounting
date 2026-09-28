@@ -505,7 +505,8 @@ def get_transactions(start_date=None, end_date=None):
             "commission":int(row[9] or 0),
             "salon_share":int(row[10] or 0),
             "note":str(row[11] or ""),
-            "tip":int(row[12] or 0) if len(row) > 12 else 0
+            "tip":int(row[12] or 0) if len(row) > 12 else 0,
+            "settle_date":str(row[13]) if len(row) > 13 and row[13] else ""
         }
         if start_date and end_date:
             if start_date <= t["date"] <= end_date: txns.append(t)
@@ -751,6 +752,10 @@ def dashboard():
         cat = t.get("category", "") or "نامشخص"
         cat_totals[cat] += t["final_amount"]
 
+    # Receivables total (unsettled نسیه)
+    receivable_total = sum(t.get("final_amount", t["amount"]) for t in get_transactions()
+        if t.get("payment_method") == "نسیه" and not t.get("settle_date"))
+
     return render_template("dashboard.html",
         today=today, today_total=today_total, today_customers=today_customers,
         today_count=today_count, today_commission=today_commission,
@@ -763,7 +768,8 @@ def dashboard():
         cat_values=json.dumps(list(cat_totals.values())),
         birthday_customers=birthday_customers,
         birthday_soon=birthday_soon,
-        month_salary_total=month_salary_total
+        month_salary_total=month_salary_total,
+        receivable_total=receivable_total
     )
 
 # ─── Routes: Index ───
@@ -1000,6 +1006,47 @@ def reports():
         total=total, customers=customers_count, services_count=len(txns),
         tips=tips, today=today, employees=emps, selected_emp=emp_filter)
 
+# ─── Routes: Receivables (نسیه تسویه‌نشده) ───
+@app.route("/receivables")
+@login_required
+def receivables():
+    today = PersianDate.today_str()
+    all_txns = get_transactions()
+    from collections import OrderedDict
+    groups = OrderedDict()
+    for t in all_txns:
+        if t.get("payment_method") != "نسیه": continue
+        if t.get("settle_date"): continue  # already settled
+        key = t["customer"]
+        if key not in groups:
+            groups[key] = {"customer": t["customer"], "phone": t.get("note",""),
+                "rows": [], "indices": [], "total": 0, "oldest": t["date"]}
+        groups[key]["rows"].append(t)
+        groups[key]["indices"].append(all_txns.index(t))
+        groups[key]["total"] += t.get("final_amount", t["amount"])
+        if t["date"] < groups[key]["oldest"]: groups[key]["oldest"] = t["date"]
+    receivable_list = list(groups.values())
+    grand_total = sum(g["total"] for g in receivable_list)
+    return render_template("receivables.html", receivables=receivable_list,
+        grand_total=grand_total, today=today)
+
+@app.route("/receivables/settle", methods=["POST"])
+@login_required
+@csrf_required
+def receivables_settle():
+    indices_str = request.form.get("indices", "")
+    today = PersianDate.today_str()
+    if indices_str:
+        all_txns = get_transactions()
+        for i in indices_str.split(","):
+            i = int(i.strip())
+            if 0 <= i < len(all_txns):
+                all_txns[i]["settle_date"] = today
+                all_txns[i]["payment_method"] = "نقدی"
+        _save_all_transactions(all_txns)
+        flash("✅ فاکتور تسویه شد", "success")
+    return redirect(url_for("receivables"))
+
 # ─── Routes: Transaction delete / edit ───
 @app.route("/transaction/delete", methods=["POST"])
 @login_required
@@ -1057,12 +1104,12 @@ def transaction_edit():
 def _save_all_transactions(txns):
     wb = Workbook(); ws = wb.active; ws.title = "داده‌ها"
     for c, h in enumerate(["تاریخ","نام مشتری","نام خدمت","دسته‌بندی","نام کارمند",
-        "مبلغ خالص","تخفیف","مبلغ نهایی","روش پرداخت","پورسانت کارمند","سهم سالن","یادداشت","انعام"], 1):
+        "مبلغ خالص","تخفیف","مبلغ نهایی","روش پرداخت","پورسانت کارمند","سهم سالن","یادداشت","انعام","تاریخ تسویه"], 1):
         cell = ws.cell(row=1, column=c, value=h); cell.font = HDR_FONT; cell.fill = PINK
     for t in txns:
         ws.append([t.get("date",""),t.get("customer",""),t.get("service",""),t.get("category",""),
             t.get("employee",""),t.get("amount",0),t.get("discount",0),t.get("final_amount",t.get("amount",0)),
-            t.get("payment_method","نقدی"),t.get("commission",0),t.get("salon_share",0),t.get("note",""),t.get("tip",0)])
+            t.get("payment_method","نقدی"),t.get("commission",0),t.get("salon_share",0),t.get("note",""),t.get("tip",0),t.get("settle_date","")])
     wb.save(TRANSACTIONS_FILE)
 
 # ─── Routes: Monthly ───
