@@ -728,7 +728,40 @@ function validateInvoice(){
     alert('حداقل یک خدمت اضافه کنید');
     return false;
   }
+  // ─── Build payment_method + split fields from checkboxes ───
+  const parts = [];
+  const cash = parseInt(document.getElementById('pay_cash').value.replace(/[^\d]/g, '')) || 0;
+  const card = parseInt(document.getElementById('pay_card').value.replace(/[^\d]/g, '')) || 0;
+  const transfer = parseInt(document.getElementById('pay_transfer').value.replace(/[^\d]/g, '')) || 0;
+  const credit = parseInt(document.getElementById('pay_credit').value.replace(/[^\d]/g, '')) || 0;
+  if(document.getElementById('pay_cash_check').checked && cash > 0) parts.push(['نقدی', cash]);
+  if(document.getElementById('pay_card_check').checked && card > 0) parts.push(['کارت‌خوان', card]);
+  if(document.getElementById('pay_transfer_check').checked && transfer > 0) parts.push(['کارت به کارت', transfer]);
+  if(document.getElementById('pay_credit_check').checked && credit > 0) parts.push(['نسیه', credit]);
+
+  // remove any previously-added dynamic fields
+  document.querySelectorAll('.dyn-payment').forEach(el => el.remove());
+
+  if(parts.length === 0){
+    // nothing selected → default: full amount نقدی
+    addHidden('payment_method', 'نقدی');
+  } else if(parts.length === 1){
+    addHidden('payment_method', parts[0][0]);
+  } else {
+    // mixed payment → store summary in payment_method, detail rows in split arrays
+    addHidden('payment_method', 'ترکیبی');
+    parts.forEach(function(p){
+      addHidden('split_method[]', p[0]);
+      addHidden('split_amount[]', String(p[1]));
+    });
+  }
   return true;
+}
+function addHidden(name, value){
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = name; inp.value = value;
+  inp.className = 'dyn-payment';
+  document.getElementById('invoiceForm').appendChild(inp);
 }
 
 // ─── Edit mode: pre-fill form from existing invoice ───
