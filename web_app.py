@@ -1456,10 +1456,10 @@ def customers_page():
         action = request.form.get("action")
         custs = get_customers()
         if action == "add":
-            custs.append({"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":PersianDate.today_str(),"birth_date":request.form.get("birth_date",""),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":0})
+            custs.append({"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":PersianDate.today_str(),"birth_date":_norm_birth_date(request.form.get("birth_date","")),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":0})
         elif action == "edit":
             idx = int(request.form["idx"])
-            custs[idx] = {"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":custs[idx]["join_date"],"birth_date":request.form.get("birth_date",custs[idx].get("birth_date","")),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":custs[idx].get("points",0)}
+            custs[idx] = {"name":request.form["name"],"phone":request.form.get("phone",""),"specialty":request.form.get("specialty",""),"join_date":custs[idx]["join_date"],"birth_date":_norm_birth_date(request.form.get("birth_date",custs[idx].get("birth_date",""))),"visit_count":int(request.form.get("visits","0") or 0),"note":request.form.get("note",""),"points":custs[idx].get("points",0)}
         elif action == "delete":
             custs.pop(int(request.form["idx"]))
         save_customers(custs)
@@ -1752,6 +1752,15 @@ def api_employees():
 def api_customers():
     return jsonify(get_customers())
 
+def _norm_birth_date(bd):
+    """Normalize Jalali birth date to YYYY/MM/DD (accepts 8-digit input too)."""
+    import re as _re
+    bd = (bd or "").strip()
+    digits = _re.sub(r"[^0-9]", "", bd)
+    if len(digits) == 8:
+        return f"{digits[:4]}/{digits[4:6]}/{digits[6:]}"
+    return bd
+
 @app.route("/api/customers/add", methods=["POST"])
 @login_required
 def api_customers_add():
@@ -1759,7 +1768,7 @@ def api_customers_add():
     name = (data.get("name") or "").strip()
     phone = (data.get("phone") or "").strip()
     specialty = (data.get("specialty") or "").strip()
-    birth_date = (data.get("birth_date") or "").strip()
+    birth_date = _norm_birth_date(data.get("birth_date"))
     note = (data.get("note") or "").strip()
     if not name:
         return jsonify({"ok": False, "error": "نام مشتری الزامی است"}), 400
