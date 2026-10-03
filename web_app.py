@@ -1035,6 +1035,7 @@ def receivables():
 @csrf_required
 def receivables_settle():
     indices_str = request.form.get("indices", "")
+    method = request.form.get("method", "نقدی").strip() or "نقدی"
     today = PersianDate.today_str()
     if indices_str:
         all_txns = get_transactions()
@@ -1042,9 +1043,9 @@ def receivables_settle():
             i = int(i.strip())
             if 0 <= i < len(all_txns):
                 all_txns[i]["settle_date"] = today
-                all_txns[i]["payment_method"] = "نقدی"
+                all_txns[i]["payment_method"] = method
         _save_all_transactions(all_txns)
-        flash("✅ فاکتور تسویه شد", "success")
+        flash(f"✅ فاکتور تسویه شد ({method})", "success")
     return redirect(url_for("receivables"))
 
 # ─── Routes: Transaction delete / edit ───

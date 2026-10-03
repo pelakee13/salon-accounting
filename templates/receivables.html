@@ -14,10 +14,16 @@
       <strong style="font-size:15px">👤 {{ r.customer }}</strong>
       <span style="color:var(--text-muted);font-size:12px;margin-right:8px">قدیمی‌ترین فاکتور: {{ r.oldest }}</span>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <strong style="color:#d9534f;font-size:15px">{{ "{:,}".format(r.total) }} تومان</strong>
-      <form method="POST" action="/receivables/settle" style="display:inline" onsubmit="return confirm('تسویه شد؟')">
+      <select id="method_{{ loop.index }}" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <option value="نقدی">💵 نقدی</option>
+        <option value="کارت‌خوان">💳 کارت‌خوان</option>
+        <option value="کارت به کارت">🏦 کارت به کارت</option>
+      </select>
+      <form method="POST" action="/receivables/settle" style="display:inline" onsubmit="this.querySelector('input[name=method]').value=document.getElementById('method_{{ loop.index }}').value; return confirm('تسویه شد؟')">
         <input type="hidden" name="indices" value="{{ r.indices|join(',') }}">
+        <input type="hidden" name="method" value="نقدی">
         <button class="btn btn-success btn-sm">✅ تسویه شد</button>
       </form>
     </div>
