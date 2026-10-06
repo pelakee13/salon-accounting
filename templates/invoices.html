@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">🧾 فاکتورها</h1>
+
+<!-- ─── Filters ─── -->
+<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <label style="font-size:13px">📅 ماه:</label>
+    <select name="month" onchange="this.form.submit()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+      {% for m in months %}<option value="{{ m }}" {% if m==month_str %}selected{% endif %}>{{ m }}</option>{% endfor %}
+    </select>
+    <label style="font-size:13px">👤 کارمند:</label>
+    <select name="employee" onchange="this.form.submit()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+      <option value="">همه</option>
+      {% for e in employees %}<option value="{{ e.name }}" {% if e.name==selected_emp %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+  </form>
+  <div style="margin-right:auto;font-size:14px">💰 جمع ماه: <strong style="color:var(--primary)">{{ "{:,}".format(grand) }}</strong> تومان</div>
+</div>
+
+{% for inv in invoices %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div>
+      <strong style="font-size:15px">👤 {{ inv.customer }}</strong>
+      <span style="color:var(--text-muted);font-size:12px;margin-right:8px">📅 {{ inv.date }}</span>
+      <span style="background:rgba(33,150,243,0.12);color:#1565c0;padding:2px 8px;border-radius:12px;font-size:11px;margin-right:6px">{{ inv.payment_method }}</span>
+      {% if inv.settled %}<span style="background:rgba(102,187,106,0.15);color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px">✅ تسویه شده ({{ inv.settle_date }})</span>{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <strong style="color:var(--primary);font-size:15px">{{ "{:,}".format(inv.total) }} تومان</strong>
+      <a href="/?edit={{ inv.indices|join(',') }}" class="btn btn-secondary btn-sm" title="ویرایش کامل">✏️ ویرایش</a>
+      <form method="POST" action="/transaction/delete_invoice" style="display:inline" onsubmit="return confirm('کل فاکتور حذف بشه؟')">
+        <input type="hidden" name="indices" value="{{ inv.indices|join(',') }}">
+        <button class="btn btn-danger btn-sm">🗑️ حذف</button>
+      </form>
+    </div>
+  </div>
+  <table style="width:100%;font-size:13px">
+    <thead><tr><th>خدمت</th><th>کارمند</th><th>مبلغ</th></tr></thead>
+    <tbody>
+    {% for item in inv.rows %}
+    <tr>
+      <td>{{ item.service }}</td>
+      <td>{{ item.employee }}</td>
+      <td style="font-weight:600">{{ "{:,}".format(item.final_amount or item.amount) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% if not invoices %}
+<div class="card"><div class="empty">فاکتوری در این ماه ثبت نشده</div></div>
+{% endif %}
+{% endblock %}

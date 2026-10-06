@@ -123,9 +123,9 @@
 
 <!-- All transactions list (with edit/delete) -->
 <div class="card">
-  <h2>📝 لیست تراکنش‌های ماه (ویرایش / حذف)</h2>
+  <h2>📝 لیست تراکنش‌های ماه</h2>
   <table>
-    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th><th>عملیات</th></tr></thead>
+    <thead><tr><th>تاریخ</th><th>مشتری</th><th>خدمت</th><th>دسته</th><th>کارمند</th><th>مبلغ</th><th>روش پرداخت</th></tr></thead>
     <tbody>
     {% for idx, t in monthly_txns %}
     <tr>
@@ -135,17 +135,14 @@
       <td>{{ t.category or '—' }}</td>
       <td>{{ t.employee }}</td>
       <td style="font-weight:600">{{ "{:,}".format(t.final_amount or t.amount) }}</td>
-      <td style="white-space:nowrap">
-        <a href="/?edit={{ idx }}" class="btn btn-secondary btn-sm" title="ویرایش کامل">✏️</a>
-        <form method="POST" action="/transaction/delete" style="display:inline" onsubmit="return confirm('حذف این فاکتور؟')">
-          <input type="hidden" name="idx" value="{{ idx }}">
-          <button class="btn btn-danger btn-sm">🗑️</button>
-        </form>
-      </td>
+      <td>{{ t.payment_method }}{% if t.settle_date %} ✅{% endif %}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
+  <div style="margin-top:10px;font-size:13px">
+    <a href="/invoices?month={{ month_str }}" class="btn btn-secondary btn-sm">🧾 ویرایش / حذف فاکتورها</a>
+  </div>
   {% if not monthly_txns %}<div class="empty">تراکنشی در این ماه ثبت نشده</div>{% endif %}
 </div>
 

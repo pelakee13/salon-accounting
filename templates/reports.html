@@ -38,11 +38,7 @@
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <strong style="color:var(--primary);font-size:15px">{{ "{:,}".format(inv.total) }} تومان</strong>
-        <a href="/?edit={{ inv.indices|join(',') }}" class="btn btn-secondary btn-sm">✏️ ویرایش</a>
-        <form method="POST" action="/transaction/delete_invoice" style="display:inline" onsubmit="return confirm('کل فاکتور حذف بشه؟')">
-          <input type="hidden" name="indices" value="{{ inv.indices|join(',') }}">
-          <button class="btn btn-danger btn-sm">🗑️ حذف</button>
-        </form>
+        <a href="/invoices?month={{ today[:7] }}" class="btn btn-secondary btn-sm" title="ویرایش/حذف در صفحه فاکتورها">🧾 مدیریت</a>
       </div>
     </div>
     <table style="width:100%;font-size:13px">

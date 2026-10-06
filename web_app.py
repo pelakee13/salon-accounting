@@ -1024,6 +1024,45 @@ def reports():
         total=total, customers=customers_count, services_count=len(txns),
         tips=tips, today=today, employees=emps, selected_emp=emp_filter)
 
+# ─── Routes: Invoices (all invoices, editable/deletable) ───
+@app.route("/invoices")
+@login_required
+def invoices_page():
+    today = PersianDate.today_str()
+    all_txns = get_transactions()
+    now = datetime.now()
+    jy, jm, jd = PersianDate.gregorian_to_jalali(now.year, now.month, now.day)
+    month_str = request.args.get("month", f"{jy}/{jm:02d}")
+    try:
+        parts = month_str.split("/"); y, m = int(parts[0]), int(parts[1])
+    except: y, m = jy, jm; month_str = f"{y}/{m:02d}"
+    start = f"{y}/{m:02d}/01"
+    end = f"{y+1}/01/01" if m == 12 else f"{y}/{m+1:02d}/01"
+    month_txns = [t for t in all_txns if start <= t["date"] < end]
+    emps = get_employees()
+    emp_filter = request.args.get("employee", "").strip()
+    if emp_filter:
+        month_txns = [t for t in month_txns if t.get("employee","") == emp_filter]
+    from collections import OrderedDict
+    invoice_groups = OrderedDict()
+    for t in month_txns:
+        idx = all_txns.index(t) if t in all_txns else -1
+        key = (t["date"], t["customer"], t.get("payment_method", "نقدی"))
+        if key not in invoice_groups:
+            invoice_groups[key] = {"rows": [], "indices": [], "total": 0,
+                "customer": t["customer"], "payment_method": t.get("payment_method", "نقدی"),
+                "date": t["date"], "settled": bool(t.get("settle_date")), "settle_date": t.get("settle_date","")}
+        invoice_groups[key]["rows"].append(t)
+        invoice_groups[key]["indices"].append(idx)
+        invoice_groups[key]["total"] += t.get("final_amount", t["amount"])
+    invoices = list(invoice_groups.values())
+    months = sorted(set(t["date"][:7] for t in all_txns), reverse=True)
+    if f"{jy}/{jm:02d}" not in months: months.insert(0, f"{jy}/{jm:02d}")
+    grand = sum(inv["total"] for inv in invoices)
+    return render_template("invoices.html", invoices=invoices,
+        month_str=month_str, months=months, employees=emps, selected_emp=emp_filter,
+        today=today, grand=grand)
+
 # ─── Routes: Receivables (نسیه تسویه‌نشده) ───
 @app.route("/receivables")
 @login_required

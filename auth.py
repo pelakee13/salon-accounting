@@ -28,7 +28,7 @@ ROLES = {
 ROLE_ALLOWED = {
     "admin": "*",                                   # everything
     "reception": {"/", "/submit_transaction", "/customers", "/customer/",
-                 "/reports", "/transaction/delete", "/transaction/delete_invoice", "/transaction/edit",
+                 "/reports", "/invoices", "/transaction/delete", "/transaction/delete_invoice", "/transaction/edit",
                  "/receivables", "/receivables/settle",
                  "/api/customers", "/api/customers/add"},
     "employee": {"/dashboard", "/reports", "/payroll", "/transaction/delete", "/transaction/delete_invoice", "/transaction/edit",
