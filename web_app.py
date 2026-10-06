@@ -1043,10 +1043,15 @@ def invoices_page():
     emp_filter = request.args.get("employee", "").strip()
     if emp_filter:
         month_txns = [t for t in month_txns if t.get("employee","") == emp_filter]
+    q = request.args.get("q", "").strip()
+    if q:
+        # search across ALL transactions (not just the selected month)
+        month_txns = [t for t in all_txns if q in t.get("customer","")]
     from collections import OrderedDict
     invoice_groups = OrderedDict()
+    idx_map = {id(t): i for i, t in enumerate(all_txns)}
     for t in month_txns:
-        idx = all_txns.index(t) if t in all_txns else -1
+        idx = idx_map.get(id(t), -1)
         key = (t["date"], t["customer"], t.get("payment_method", "نقدی"))
         if key not in invoice_groups:
             invoice_groups[key] = {"rows": [], "indices": [], "total": 0,
@@ -1061,7 +1066,7 @@ def invoices_page():
     grand = sum(inv["total"] for inv in invoices)
     return render_template("invoices.html", invoices=invoices,
         month_str=month_str, months=months, employees=emps, selected_emp=emp_filter,
-        today=today, grand=grand)
+        today=today, grand=grand, q=q)
 
 # ─── Routes: Receivables (نسیه تسویه‌نشده) ───
 @app.route("/receivables")

@@ -5,6 +5,9 @@
 <!-- ─── Filters ─── -->
 <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
   <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <label style="font-size:13px">🔍 جستجو:</label>
+    <input name="q" value="{{ q or '' }}" placeholder="نام یا فامیل مشتری..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:180px">
+    <button class="btn btn-secondary btn-sm">🔍</button>
     <label style="font-size:13px">📅 ماه:</label>
     <select name="month" onchange="this.form.submit()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
       {% for m in months %}<option value="{{ m }}" {% if m==month_str %}selected{% endif %}>{{ m }}</option>{% endfor %}
@@ -15,7 +18,7 @@
       {% for e in employees %}<option value="{{ e.name }}" {% if e.name==selected_emp %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
     </select>
   </form>
-  <div style="margin-right:auto;font-size:14px">💰 جمع ماه: <strong style="color:var(--primary)">{{ "{:,}".format(grand) }}</strong> تومان</div>
+  <div style="margin-right:auto;font-size:14px">{% if q %}🔍 نتایج جستجوی «{{ q }}» — {% else %}💰 جمع ماه: {% endif %}<strong style="color:var(--primary)">{{ "{:,}".format(grand) }}</strong> تومان</div>
 </div>
 
 {% for inv in invoices %}
