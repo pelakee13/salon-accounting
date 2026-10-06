@@ -791,6 +791,8 @@ def index():
                 "customer": edit_txns[0].get("customer", ""),
                 "phone": edit_txns[0].get("phone", ""),
                 "payment_method": edit_txns[0].get("payment_method", "نقدی"),
+                "date": edit_txns[0].get("date", ""),
+                "settle_date": next((t.get("settle_date","") for t in edit_txns if t.get("settle_date")), ""),
                 "items_json": json.dumps([{
                     "service": t.get("service", ""), "employee": t.get("employee", ""),
                     "amount": t.get("amount", 0), "commission": t.get("commission", 0)
@@ -832,9 +834,16 @@ def submit_transaction():
         flash("حداقل یک خدمت اضافه کنید", "error"); return redirect(url_for("index"))
 
     # ─── Edit mode: delete old transactions first ───
+    edit_date = ""
+    edit_settle_date = ""
     if edit_indices:
         all_txns = get_transactions()
         indices_to_delete = sorted([int(i.strip()) for i in edit_indices.split(",") if i.strip().isdigit()], reverse=True)
+        # remember original date + settle state before deleting
+        for idx in indices_to_delete:
+            if 0 <= idx < len(all_txns):
+                if not edit_date: edit_date = all_txns[idx].get("date", "")
+                if not edit_settle_date: edit_settle_date = all_txns[idx].get("settle_date", "")
         for idx in indices_to_delete:
             if 0 <= idx < len(all_txns):
                 all_txns.pop(idx)
@@ -842,6 +851,8 @@ def submit_transaction():
         flash("🔄 فاکتور قبلی حذف شد — در حال ذخیره فاکتور جدید", "info")
 
     today = PersianDate.today_str()
+    # preserve original transaction date when editing an old invoice
+    txn_date = edit_date if edit_date else today
     emps = get_employees()
     emp_shares = {e["name"]: e["share_percent"] for e in emps}
 
@@ -892,11 +903,18 @@ def submit_transaction():
     for idx, item in enumerate(items_data):
         item_tip = tip if idx == 0 else 0
         add_transaction(
-            today, customer, item["service"], item["category"], item["employee"],
+            txn_date, customer, item["service"], item["category"], item["employee"],
             item["amount"], discount_amount // len(items_data) if items_data else 0,
             final_amount // len(items_data) if items_data else 0,
             payment_method, item["commission"], item["salon_share"], phone, item_tip
         )
+    # restore settle state if the edited invoice was already settled
+    if edit_settle_date:
+        all_txns = get_transactions()
+        for t in all_txns:
+            if t["customer"] == customer and t["date"] == txn_date and t.get("payment_method") == payment_method:
+                t["settle_date"] = edit_settle_date
+        _save_all_transactions(all_txns)
 
     # Update customer visit count and points
     if customer:

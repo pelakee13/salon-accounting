@@ -136,7 +136,7 @@
       <td>{{ t.employee }}</td>
       <td style="font-weight:600">{{ "{:,}".format(t.final_amount or t.amount) }}</td>
       <td style="white-space:nowrap">
-        <a href="/transaction/edit?idx={{ idx }}" class="btn btn-secondary btn-sm">✏️</a>
+        <a href="/?edit={{ idx }}" class="btn btn-secondary btn-sm" title="ویرایش کامل">✏️</a>
         <form method="POST" action="/transaction/delete" style="display:inline" onsubmit="return confirm('حذف این فاکتور؟')">
           <input type="hidden" name="idx" value="{{ idx }}">
           <button class="btn btn-danger btn-sm">🗑️</button>
