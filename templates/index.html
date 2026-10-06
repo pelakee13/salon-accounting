@@ -471,7 +471,7 @@ function addItem(){
   let svc = document.getElementById('svc_select');
   let emp = document.getElementById('emp_select');
   let amt = document.getElementById('amt_input').value;
-  if(!amt || parseInt(amt)<=0){alert('لطفاً مبلغ را وارد کنید');return;}
+  if(amt==='' || isNaN(parseInt(amt)) || parseInt(amt)<0){alert('لطفاً مبلغ را وارد کنید (برای مبلغ نامشخص، 0 بگذارید)');return;}
   let share = parseFloat(emp.options[emp.selectedIndex].getAttribute('data-share')) || 0;
   let amount = parseInt(amt);
   let commission = Math.round(amount * share / 100);
@@ -642,10 +642,15 @@ function updatePaymentBalance() {
   balanceBar.style.background = progress >= 100 ? 'var(--success)' : progress > 0 ? 'var(--warning)' : '#e0e0e0';
   
   balanceWarning.style.display = 'block';
-  if (totalPaid === 0 && anyChecked) {
+  if (totalPaid === 0 && anyChecked && finalAmount > 0) {
     balanceWarning.innerHTML = '<span style="color:var(--warning)">⚠️ مبلغی وارد نشده</span>';
     balanceStatus.style.background = '#fff8e1';
     submitBtn.disabled = true; submitBtn.style.opacity='0.5'; submitBtn.style.cursor='not-allowed';
+  } else if (finalAmount === 0 && items.length > 0 && items.every(it => it.amount === 0)) {
+    // مبلغ نامشخص — فاکتور با مبالغ 0 ثبت میشه و بعداً ویرایش میشه
+    balanceWarning.innerHTML = '<span style="color:var(--warning)">📝 مبلغ نامشخص — بعداً ویرایش و تکمیل کنید</span>';
+    balanceStatus.style.background = '#fff8e1';
+    submitBtn.disabled = false; submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
   } else if (remaining > 0 && credit === 0) {
     balanceWarning.innerHTML = `<span style="color:var(--danger)">⚠️ مبلغ باقیمانده: ${remaining.toLocaleString()} تومان</span>`;
     balanceStatus.style.background = '#fce8e6';
@@ -777,6 +782,13 @@ function addHidden(name, value){
     document.getElementById('customer_name_hidden').value = editCustomer;
   }
   if(editPhone){ document.getElementById('customer_phone').value = editPhone; }
+  // Pre-check payment method so it stays on save
+  var pmMap = {'نقدی':'cash','کارت‌خوان':'card','کارت به کارت':'transfer','نسیه':'credit'};
+  var pmKey = pmMap[editPayment];
+  if(pmKey){
+    var chk = document.getElementById('pay_'+pmKey+'_check');
+    if(chk && !chk.checked){ chk.checked = true; togglePaymentMethod(pmKey); }
+  }
   // Pre-fill items
   items = [];
   editData.forEach(function(it){
